@@ -10,3 +10,5 @@ lean_lib «ConstrainedDecodingFormalization» where
 @[default_target]
 lean_exe "constrained-decoding-formalization" where
   root := `Main
+
+require "leanprover-community" / "mathlib"
