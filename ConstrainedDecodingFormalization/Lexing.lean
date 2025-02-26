@@ -38,3 +38,6 @@ def one_lookahead (Lexer : Lexer α β) : Prop :=
     let (tokens', r') := Lexer.lex (w ++ [c]);
     (∃ (t : β), tokens' = tokens ++ [t] ∧ r' = [c]) ∨
     (tokens' = tokens ∧ r' = r ++ [c])
+
+class Lexer.IsOneLookahead (Lexer : Lexer α β) : Prop where
+  one_lookahead : one_lookahead Lexer
