@@ -1,5 +1,6 @@
 import Mathlib.Computability.NFA
 import Mathlib.Computability.DFA
+import Mathlib.Computability.RegularExpressions
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.List.Basic
@@ -10,6 +11,13 @@ import Std.Data.HashSet
 universe u v w
 
 --set_option diagnostics true
+open RegularExpression
+
+--ab+
+#check (char 'a') * (char 'b' * star (char 'b'))
+
+--ac+
+#check (char 'a') * (char 'c' * star (char 'c'))
 
 structure FSA (α : Type u) (σ : Type v) where
   input : Finset α
@@ -110,45 +118,10 @@ noncomputable def build_lexing_fst_iter (A : FSA α σ) (output : Finset α) [De
 
   ⟨A.input, output, Q, q0, step, Ffst⟩
 
-noncomputable def build_lexing_fst_func (A : FSA α σ) (output : Finset α) [DecidableEq σ] [BEq α] : FST α α σ :=
-  let Q := A.states
-  let δ := A.step
-  let q0 := A.start
-
-  let Ffst := {q0}
-
-  -- {q -- (c,ε) --> q' | q -- c --> q' ∈ δ}
-  let δfst₁ := Q.toList.flatMap (fun q =>
-    A.input.toList.flatMap (fun c =>
-      (δ q c).toList.map (fun q' => (q, c, q', [])) -- (c, ε) transition
-    )
-  )
 
 
-  let δfst₂ := Q.toList.flatMap (fun q =>
-    output.toList.flatMap (fun T =>
-      if (δ q T).Nonempty then
-        let transitions := A.input.toList.flatMap (fun c =>
-          (δ q0 c).toList.filterMap (fun q' =>
-            if (Q \ δ q c).Nonempty then some (q, c, q', [T]) else none
-          )
-        )
-        transitions ++ [(q, EOS, q0, [T, EOS])]
-      else []
-    )
-  )
 
-  let δfst := δfst₁ ++ δfst₂
-
-  -- create step function
-  let step (s : σ) (c : α) : (Finset σ × List α) :=
-    let nextTransitions := δfst.filter (fun (s₁, a, _, _) => (s₁ == s) && (a == c))
-    let nextStates := nextTransitions.map (fun (_, _, s₂, _) => s₂) |>.toFinset
-    let outputSymbols := nextTransitions.foldl (fun acc (_, _, _, o) => acc ++ o) []
-    (nextStates, outputSymbols)
-
-  ⟨A.input, output, Q, q0, step, Ffst⟩
-
+/-
 def build_lexing_fst_list (A : FSA_list α σ) (output : List α) [DecidableEq σ] [BEq α] : FST_list α α σ :=
   let Q := A.states
   let δ := A.step
@@ -187,3 +160,43 @@ def build_lexing_fst_list (A : FSA_list α σ) (output : List α) [DecidableEq �
     (nextStates, outputSymbols)
 
   ⟨A.input, output, Q, q0, step, Ffst⟩
+
+noncomputable def build_lexing_fst_func (A : FSA α σ) (output : Finset α) [DecidableEq σ] [BEq α] : FST α α σ :=
+  let Q := A.states
+  let δ := A.step
+  let q0 := A.start
+
+  let Ffst := {q0}
+
+  -- {q -- (c,ε) --> q' | q -- c --> q' ∈ δ}
+  let δfst₁ := Q.toList.flatMap (fun q =>
+    A.input.toList.flatMap (fun c =>
+      (δ q c).toList.map (fun q' => (q, c, q', [])) -- (c, ε) transition
+    )
+  )
+
+
+  let δfst₂ := Q.toList.flatMap (fun q =>
+    output.toList.flatMap (fun T =>
+      if (δ q T).Nonempty then
+        let transitions := A.input.toList.flatMap (fun c =>
+          (δ q0 c).toList.filterMap (fun q' =>
+            if (Q \ δ q c).Nonempty then some (q, c, q', [T]) else none
+          )
+        )
+        transitions ++ [(q, EOS, q0, [T, EOS])]
+      else []
+    )
+  )
+
+  let δfst := δfst₁ ++ δfst₂
+
+  -- create step function
+  let step (s : σ) (c : α) : (Finset σ × List α) :=
+    let nextTransitions := δfst.filter (fun (s₁, a, _, _) => (s₁ == s) && (a == c))
+    let nextStates := nextTransitions.map (fun (_, _, s₂, _) => s₂) |>.toFinset
+    let outputSymbols := nextTransitions.foldl (fun acc (_, _, _, o) => acc ++ o) []
+    (nextStates, outputSymbols)
+
+  ⟨A.input, output, Q, q0, step, Ffst⟩
+-/
