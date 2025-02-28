@@ -4,6 +4,7 @@ import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.List.Basic
 import Mathlib.Data.Finset.Basic
+import Std.Data.HashSet
 --import Mathlib.Data.Set.Finite
 
 universe u v w
@@ -17,6 +18,13 @@ structure FSA (α : Type u) (σ : Type v) where
   step : σ → α → Finset σ
   accept : Finset σ
 
+structure FSA_list (α : Type u) (σ : Type v) where
+  input : List α
+  states : List σ
+  start : σ
+  step : σ → α → List σ
+  accept : List σ
+
 /-- A FST is a set of states (`σ`), a transition function from state to state that outputs a sequence
   of elements (`List β`) on transition, labelled by the alphabet (`step`), a set of starting states (`start`) and
   a set of acceptance states (`accept`). Note the transition function sends a state to a `Set` of states.
@@ -29,6 +37,13 @@ structure FST (α : Type u) (β : Type w) (σ : Type v) where
   step : σ → α → (Finset σ × List β)
   accept : Finset σ
 
+structure FST_list (α : Type u) (β : Type w) (σ : Type v) where
+  input : List α
+  output : List β
+  states : List σ
+  start : σ
+  step : σ → α → (List σ × List β)
+  accept : List σ
 
 structure Lexer (α : Type u) (β : Type w) where
   lex : List α → (List β × List α)
@@ -59,7 +74,7 @@ def one_lookahead (Lexer : Lexer α β) : Prop :=
 class Lexer.IsOneLookahead (Lexer : Lexer α β) : Prop where
   one_lookahead : one_lookahead Lexer
 
-noncomputable def build_lexing_fst (A : FSA α σ) (output : Finset α) [DecidableEq σ] [BEq α] : FST α α σ := Id.run do
+noncomputable def build_lexing_fst_iter (A : FSA α σ) (output : Finset α) [DecidableEq σ] [BEq α] : FST α α σ := Id.run do
   let Q := A.states
   let δ := A.step
   let q0 := A.start
@@ -129,6 +144,45 @@ noncomputable def build_lexing_fst_func (A : FSA α σ) (output : Finset α) [De
   let step (s : σ) (c : α) : (Finset σ × List α) :=
     let nextTransitions := δfst.filter (fun (s₁, a, _, _) => (s₁ == s) && (a == c))
     let nextStates := nextTransitions.map (fun (_, _, s₂, _) => s₂) |>.toFinset
+    let outputSymbols := nextTransitions.foldl (fun acc (_, _, _, o) => acc ++ o) []
+    (nextStates, outputSymbols)
+
+  ⟨A.input, output, Q, q0, step, Ffst⟩
+
+def build_lexing_fst_list (A : FSA_list α σ) (output : List α) [DecidableEq σ] [BEq α] : FST_list α α σ :=
+  let Q := A.states
+  let δ := A.step
+  let q0 := A.start
+
+  let Ffst := {q0}
+
+  -- {q -- (c,ε) --> q' | q -- c --> q' ∈ δ}
+  let δfst₁ := Q.flatMap (fun q =>
+    A.input.flatMap (fun c =>
+      (δ q c).map (fun q' => (q, c, q', [])) -- (c, ε) transition
+    )
+  )
+
+
+  let δfst₂ := Q.flatMap (fun q =>
+    output.flatMap (fun T =>
+      if ¬(δ q T).isEmpty then
+        let transitions := A.input.flatMap (fun c =>
+          (δ q0 c).filterMap (fun q' =>
+            if ¬(Q \ δ q c).isEmpty then some (q, c, q', [T]) else none
+          )
+        )
+        transitions ++ [(q, EOS, q0, [T, EOS])]
+      else []
+    )
+  )
+
+  let δfst := δfst₁ ++ δfst₂
+
+  -- create step function
+  let step (s : σ) (c : α) : (List σ × List α) :=
+    let nextTransitions := δfst.filter (fun (s₁, a, _, _) => (s₁ == s) && (a == c))
+    let nextStates := nextTransitions.map (fun (_, _, s₂, _) => s₂)
     let outputSymbols := nextTransitions.foldl (fun acc (_, _, _, o) => acc ++ o) []
     (nextStates, outputSymbols)
 
