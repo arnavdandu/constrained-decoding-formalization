@@ -1,39 +1,53 @@
 import Mathlib.Computability.NFA
 import Mathlib.Computability.DFA
+import Mathlib.Data.Set.Defs
+import Mathlib.Data.Set.Basic
+import Mathlib.Data.List.Basic
+import Mathlib.Data.Finset.Basic
+--import Mathlib.Data.Set.Finite
 
 universe u v w
 
 --set_option diagnostics true
+
+structure FSA (α : Type u) (σ : Type v) where
+  input : Finset α
+  states : Finset σ
+  start : σ
+  step : σ → α → Finset σ
+  accept : Finset σ
 
 /-- A FST is a set of states (`σ`), a transition function from state to state that outputs a sequence
   of elements (`List β`) on transition, labelled by the alphabet (`step`), a set of starting states (`start`) and
   a set of acceptance states (`accept`). Note the transition function sends a state to a `Set` of states.
   These are the states that it may be sent to. -/
 structure FST (α : Type u) (β : Type w) (σ : Type v) where
-  step : σ → α → (Set σ × List β)
-  start : Set σ
-  accept : Set σ
+  input : Finset α
+  output : Finset β
+  states : Finset σ
+  start : σ
+  step : σ → α → (Finset σ × List β)
+  accept : Finset σ
+
 
 structure Lexer (α : Type u) (β : Type w) where
   lex : List α → (List β × List α)
 
-def lex (α : Type u) (β : Type w) (tokenize : α → Option β) : List α → (List β × List α)
-  | [] => ([], [])
-  | c :: cs =>
-      match tokenize c with
-      | some t =>
-          let (tokens, rest) := lex α β tokenize cs
-          (t :: tokens, rest)
-      | none => ([], c :: cs)
 
 variable {α : Type u} {σ σ' : Type v} {β : Type w} (M : FST α β σ)
+variable (EOS : α)
 
 #check NFA
 #check FST
 #check String
 
-instance : Inhabited (FST α β σ) :=
-  ⟨FST.mk (fun _ _ => (default, [])) ∅ ∅⟩
+open Std
+
+instance [Inhabited σ] : Inhabited (FSA α σ) :=
+  ⟨FSA.mk ∅ ∅ default (fun _ _ => default) ∅⟩
+
+instance [Inhabited σ] : Inhabited (FST α β σ) :=
+  ⟨FST.mk ∅ ∅ ∅ default (fun _ _ => (default, [])) ∅⟩
 
 def one_lookahead (Lexer : Lexer α β) : Prop :=
   ∀ (w : List α) (c : α),
@@ -42,12 +56,42 @@ def one_lookahead (Lexer : Lexer α β) : Prop :=
     (∃ (t : β), tokens' = tokens ++ [t] ∧ r' = [c]) ∨
     (tokens' = tokens ∧ r' = r ++ [c])
 
-def maximal_munch (Lexer : Lexer α β) : Prop :=
-  ∀ (w : List α),
-    let (toks1, r1) := Lexer.lex w;
-    let (toks2, r2) := Lexer.lex w;
-    (toks1 = toks2 ∧ r1 = r2) ∨
-    (∃ (t' : β) (r1' : List α), toks2 = toks1 ++ [t'] ∧ r1 = r1' ++ r2)
-
 class Lexer.IsOneLookahead (Lexer : Lexer α β) : Prop where
   one_lookahead : one_lookahead Lexer
+
+noncomputable def build_lexing_fst (A : FSA α σ) (output : Finset α) [DecidableEq σ] [BEq α] : FST α α σ := Id.run do
+  let Q := A.states
+  let δ := A.step
+  let q0 := A.start
+
+  -- Ffst := {q0}
+  let Ffst := [q0].toFinset
+
+  -- δfst := {q -- (c,ε) --> q' | q -- c --> q' ∈ δ}
+  let mut δfst : List (σ × α × σ × List α) := []
+  for q in Q.toList do
+    for c in A.input.toList do
+      for q' in (δ q c).toList do
+        δfst := δfst ++ [(q, c, q', [])]
+
+  -- for state q that recognizes language token T do
+  for q in Q.toList do
+    for T in output.toList do
+      if (δ q T).Nonempty then
+        -- for (c, q') s.t.
+        for c in A.input.toList do
+          -- q0 -- c --> q' ∈ δ
+          for q' in (δ q0 c).toList do
+            -- ∃q'' s.t. q -- c --> q'' ∉ δ
+            if (Q \ δ q c).Nonempty then
+              δfst := δfst ++ [(q, c, q', [T])]
+        δfst := δfst ++ [(q, EOS, q0, [T, EOS])]
+
+  -- create step function 
+  let step (s : σ) (c : α) : (Finset σ × List α) :=
+    let nextTransitions := δfst.filter (λ (s₁, a, _, _) => s₁ == s ∧ a == c)
+    let nextStates := nextTransitions.map (λ (_, _, s₂, _) => s₂) |>.toFinset
+    let outputSymbols := nextTransitions.foldl (λ acc (_, _, _, o) => acc ++ o) []
+    (nextStates, outputSymbols)
+
+  ⟨A.input, output, Q, q0, step, Ffst⟩
