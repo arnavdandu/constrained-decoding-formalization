@@ -26,12 +26,6 @@ structure FSA (α : Type u) (σ : Type v) where
   step : σ → α → Finset σ
   accept : Finset σ
 
-structure FSA_list (α : Type u) (σ : Type v) where
-  input : List α
-  states : List σ
-  start : σ
-  step : σ → α → List σ
-  accept : List σ
 
 /-- A FST is a set of states (`σ`), a transition function from state to state that outputs a sequence
   of elements (`List β`) on transition, labelled by the alphabet (`step`), a set of starting states (`start`) and
@@ -44,14 +38,6 @@ structure FST (α : Type u) (β : Type w) (σ : Type v) where
   start : σ
   step : σ → α → (Finset σ × List β)
   accept : Finset σ
-
-structure FST_list (α : Type u) (β : Type w) (σ : Type v) where
-  input : List α
-  output : List β
-  states : List σ
-  start : σ
-  step : σ → α → (List σ × List β)
-  accept : List σ
 
 structure Lexer (α : Type u) (β : Type w) where
   lex : List α → (List β × List α)
@@ -122,6 +108,23 @@ noncomputable def build_lexing_fst_iter (A : FSA α σ) (output : Finset α) [De
 
 
 /-
+
+structure FSA_list (α : Type u) (σ : Type v) where
+  input : List α
+  states : List σ
+  start : σ
+  step : σ → α → List σ
+  accept : List σ
+
+structure FST_list (α : Type u) (β : Type w) (σ : Type v) where
+  input : List α
+  output : List β
+  states : List σ
+  start : σ
+  step : σ → α → (List σ × List β)
+  accept : List σ
+
+
 def build_lexing_fst_list (A : FSA_list α σ) (output : List α) [DecidableEq σ] [BEq α] : FST_list α α σ :=
   let Q := A.states
   let δ := A.step
