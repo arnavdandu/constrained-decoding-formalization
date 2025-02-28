@@ -64,8 +64,7 @@ noncomputable def build_lexing_fst (A : FSA α σ) (output : Finset α) [Decidab
   let δ := A.step
   let q0 := A.start
 
-  -- Ffst := {q0}
-  let Ffst := [q0].toFinset
+  let Ffst := {q0}
 
   -- δfst := {q -- (c,ε) --> q' | q -- c --> q' ∈ δ}
   let mut δfst : List (σ × α × σ × List α) := []
@@ -87,11 +86,50 @@ noncomputable def build_lexing_fst (A : FSA α σ) (output : Finset α) [Decidab
               δfst := δfst ++ [(q, c, q', [T])]
         δfst := δfst ++ [(q, EOS, q0, [T, EOS])]
 
-  -- create step function 
+  -- create step function
   let step (s : σ) (c : α) : (Finset σ × List α) :=
-    let nextTransitions := δfst.filter (λ (s₁, a, _, _) => s₁ == s ∧ a == c)
-    let nextStates := nextTransitions.map (λ (_, _, s₂, _) => s₂) |>.toFinset
-    let outputSymbols := nextTransitions.foldl (λ acc (_, _, _, o) => acc ++ o) []
+    let nextTransitions := δfst.filter (fun (s₁, a, _, _) => s₁ == s ∧ a == c)
+    let nextStates := nextTransitions.map (fun (_, _, s₂, _) => s₂) |>.toFinset
+    let outputSymbols := nextTransitions.foldl (fun acc (_, _, _, o) => acc ++ o) []
+    (nextStates, outputSymbols)
+
+  ⟨A.input, output, Q, q0, step, Ffst⟩
+
+noncomputable def build_lexing_fst_func (A : FSA α σ) (output : Finset α) [DecidableEq σ] [BEq α] : FST α α σ :=
+  let Q := A.states
+  let δ := A.step
+  let q0 := A.start
+
+  let Ffst := {q0}
+
+  -- {q -- (c,ε) --> q' | q -- c --> q' ∈ δ}
+  let δfst₁ := Q.toList.flatMap (fun q =>
+    A.input.toList.flatMap (fun c =>
+      (δ q c).toList.map (fun q' => (q, c, q', [])) -- (c, ε) transition
+    )
+  )
+
+
+  let δfst₂ := Q.toList.flatMap (fun q =>
+    output.toList.flatMap (fun T =>
+      if (δ q T).Nonempty then
+        let transitions := A.input.toList.flatMap (fun c =>
+          (δ q0 c).toList.filterMap (fun q' =>
+            if (Q \ δ q c).Nonempty then some (q, c, q', [T]) else none
+          )
+        )
+        transitions ++ [(q, EOS, q0, [T, EOS])]
+      else []
+    )
+  )
+
+  let δfst := δfst₁ ++ δfst₂
+
+  -- create step function
+  let step (s : σ) (c : α) : (Finset σ × List α) :=
+    let nextTransitions := δfst.filter (fun (s₁, a, _, _) => (s₁ == s) && (a == c))
+    let nextStates := nextTransitions.map (fun (_, _, s₂, _) => s₂) |>.toFinset
+    let outputSymbols := nextTransitions.foldl (fun acc (_, _, _, o) => acc ++ o) []
     (nextStates, outputSymbols)
 
   ⟨A.input, output, Q, q0, step, Ffst⟩
