@@ -71,9 +71,9 @@ class Lexer.IsOneLookahead (Lexer : Lexer α β) : Prop where
 noncomputable def build_lexing_fst_iter (A : FSA α σ) (output : Finset α) [DecidableEq σ] [BEq α] : FST α α σ := Id.run do
   let Q := A.states
   let δ := A.step
-  let q0 := A.start
+  let q₀ := A.start
 
-  let Ffst := {q0}
+  let Ffst := {q₀}
 
   -- δfst := {q -- (c,ε) --> q' | q -- c --> q' ∈ δ}
   let mut δfst : List (σ × α × σ × List α) := []
@@ -89,11 +89,11 @@ noncomputable def build_lexing_fst_iter (A : FSA α σ) (output : Finset α) [De
         -- for (c, q') s.t.
         for c in A.input.toList do
           -- q0 -- c --> q' ∈ δ
-          for q' in (δ q0 c).toList do
+          for q' in (δ q₀ c).toList do
             -- ∃q'' s.t. q -- c --> q'' ∉ δ
             if (Q \ δ q c).Nonempty then
               δfst := δfst ++ [(q, c, q', [T])]
-        δfst := δfst ++ [(q, EOS, q0, [T, EOS])]
+        δfst := δfst ++ [(q, EOS, q₀, [T, EOS])]
 
   -- create step function
   let step (s : σ) (c : α) : (Finset σ × List α) :=
@@ -102,12 +102,31 @@ noncomputable def build_lexing_fst_iter (A : FSA α σ) (output : Finset α) [De
     let outputSymbols := nextTransitions.foldl (fun acc (_, _, _, o) => acc ++ o) []
     (nextStates, outputSymbols)
 
-  ⟨A.input, output, Q, q0, step, Ffst⟩
+  ⟨A.input, output, Q, q₀, step, Ffst⟩
 
 
-
+noncomputable def build_detokenizing_fst (V : Finset (List α)) : FST α α (List α) := Id.run do
+  sorry
 
 /-
+let q_ε := ([] : List α)
+  let mut Q := [q_ε]
+  let F := [q_ε]
+  let q₀ := q_ε
+let mut δ := List (σ × α × σ × List α)
+
+  for s in V.toList do
+    let k := s.length
+    let mut q_prev := q_ε
+    for i in [0:k] do
+      let q_curr := s.take i
+      Q := Q ++ [q_curr]
+      δ := δ ++ [(q_prev, [], q_curr, [q_curr])]
+      q_prev := q_curr
+    δ := δ ++ [(q_prev, s.take k, q_ε, s[k-1]?)]
+  sorry
+
+  ⟨V, V, Q.toFinset, q₀, δ⟩
 
 structure FSA_list (α : Type u) (σ : Type v) where
   input : List α
