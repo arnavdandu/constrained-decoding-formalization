@@ -7,10 +7,6 @@ package "constrained-decoding-formalization" where
 lean_lib «ConstrainedDecodingFormalization» where
   -- add library configuration options here
 
-@[default_target]
-lean_exe "constrained-decoding-formalization" where
-  root := `Main
-
 require "leanprover-community" / "mathlib"
 
 require checkdecls from git "https://github.com/PatrickMassot/checkdecls.git"

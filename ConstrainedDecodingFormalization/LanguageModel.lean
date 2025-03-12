@@ -3,8 +3,11 @@ universe u v
 -- States that β is a valid LLM token set over the base alphabet α
 class Token ( α: Type u ) ( β: Type v ) where 
   flatten : β → List α
-  eos : β
-  emptyness : ∀ b, flatten b = [] ↔ b = eos
+  embed: α → β 
+  eos: β
+
+  fe: ∀ a, flatten (embed a) = [a]
+  empty: ∀ b, flatten b = [] ↔ b = eos
 
 abbrev Constrainer ( α β ) [ Token α β ] := List α → β → Bool 
 
