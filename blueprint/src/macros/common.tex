@@ -19,3 +19,19 @@
 
 \theoremstyle{definition}
 \newtheorem{definition}[theorem]{Definition}
+
+\newcommand{\nbc}[3]{
+	{\colorbox{#3}{\bfseries\sffamily\scriptsize\textcolor{white}{#1}}}
+	{\textcolor{#3}{\sf\small \textit{#2}}}
+}
+
+\newcommand{\mbc}[1]{{\color{red}[Manu: #1]}}
+\newcommand\kh[1]{\nbc{KP}{#1}{brown}}
+\newcommand{\khchanged}[1]{\textcolor{violet}{#1}}
+
+\newcommand{\automaton}{\mathcal{A}}
+\newcommand{\transducer}{\mathcal{T}}
+\newcommand{\lexer}{\mathtt{Lex}}
+\newcommand{\lang}{\mathcal{L}}
+\newcommand{\prefix}{\mathrm{prefix}}
+\newcommand{\pfun}{\mathrel{\ooalign{\hfil$\mapstochar$\hfil\cr$\to$\cr}}}
