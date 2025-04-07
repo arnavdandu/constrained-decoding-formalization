@@ -21,23 +21,35 @@ open RegularExpression
 --ac+
 #check (char 'a') * (char 'c' * star (char 'c'))
 
-structure FSA (α : Type u) (σ : Type v) where
-  input : List α
-  states : List σ
+section Symbols
+variable
+  {α : Type u}
+  {β : Type u}
+  {σ : Type u}
+
+abbrev Word (α : Type u) := List α -- for input/output symbols
+abbrev Vocab (α : Type u) := List (Word α)
+abbrev State (α : Type u) := List α
+abbrev Next (α : Type u) := List (State α)
+abbrev Output (α : Type u):= List (List α)
+
+structure FSA (α) (σ) where
+  input : Word α
+  states : State σ
   start : σ
-  step : σ → α → List σ
-  accept : List σ
+  step : σ → α → State σ
+  accept : State σ
 
 structure FST (α : Type u) (β : Type w) (σ : Type v) where
-  input : List α
-  output : List β
-  states : List σ
+  input : Word α
+  output : Word β
+  states : State σ
   start : σ
-  step : σ → α → (List σ × List β)
-  accept : List σ
+  step : σ → α → (State σ × Word β)
+  accept : State σ
 
 structure Lexer (α : Type u) (β : Type w) where
-  lex : List α → (List β × List α)
+  lex : Word α → (Word β × Word α)
 
 open Std
 
@@ -57,14 +69,7 @@ def one_lookahead (Lexer : Lexer α β) : Prop :=
 class Lexer.IsOneLookahead (Lexer : Lexer α β) : Prop where
   one_lookahead : one_lookahead Lexer
 
-section Symbols
-variable {α : Type u}
 
-abbrev Word (α : Type u) := List α -- for input/output symbols
-abbrev Vocab (α : Type u) := List (Word α)
-abbrev State (α : Type u) := List α
-abbrev Next (α : Type u) := List (State α)
-abbrev Output (α : Type u):= List (List α)
 
 noncomputable def build_detokenizing_fst (V : Vocab α) [BEq α] : FST (Word α) (Word α) (State α) := Id.run do
   let q_ε := ([] : List α)
