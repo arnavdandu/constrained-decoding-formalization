@@ -89,8 +89,15 @@ NB: unless a checker is \emph{sound}, do note that strings in the checker interm
 
 \begin{definition}[Checker Sound]
     \label{def:CheckerSound}
-    \uses{def:Checker}
-    A checker is $\emph(sound)$ if $\langint$ is exactly the set of prefixes of the checker language. Informally, you never run into a case where a language model has no choices, assuming that it follows constrained decoding.
+    \uses{def:Checker,def:Vocabulary}
+    A checker is \emph{sound} if it is well-behaved, adhering to the two following rules:
+
+    \begin{enumerate}
+        \item $w \in \langint$ implies that there exists some $w' \in \lang$ such that $w$ is a prefix of $w'$. Informally, you never run into a case where a language model has no choices for what to output.
+        \item $w \in \langint$ implies that if $w = w'v$ for some $w' \in \alphabet^*, v \in \vocab$, then $w' \in \langint$. Informally, the checker is path independent.
+    \end{enumerate}
+
+    In particular, this implies that $\langint$ is exactly the set of prefixes of checker language $\lang$.
 \end{definition}
 
 \begin{definition}[Checker Complete]
@@ -98,11 +105,5 @@ NB: unless a checker is \emph{sound}, do note that strings in the checker interm
     \uses{def:Checker, def:CheckerIntermediateLanguage, def:CheckerLanguage}
     A checker for a language $\lang$ is \emph{complete} if the checker language and $\lang$ are equivalent, and the checker intermediate language and $\langpre$ are equivalent. 
 \end{definition}
-
-\begin{theorem}[Checker Complete implies Sound]
-    \label{def:CheckerCompleteImplesSound}
-    \uses{def:CheckerComplete,def:CheckerSound}
-    Let $C$ be an checker. If $C$ is complete for some language $\lang$, then it is sound.
-\end{theorem}
 
 

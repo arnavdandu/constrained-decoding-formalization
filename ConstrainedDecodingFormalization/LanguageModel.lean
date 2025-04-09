@@ -5,7 +5,7 @@ class Token ( α: Type u ) ( β: Type v ) where
   flatten : β → List α
   embed: α → β 
   eos: β
-
+  
   fe: ∀ a, flatten (embed a) = [a]
   empty: ∀ b, flatten b = [] ↔ b = eos
 
@@ -24,9 +24,21 @@ inductive ConstrainedLanguage { α β } [ t: Token α β ] ( c: Constrainer α �
 abbrev LanguageModel ( α β ) [ Token α β ] := List α → β
 
 
+--  
+partial def constrained_decoding ( ) := by sorry
+  -- given 
+  -- a constrained lexing automata (symbols )
+  -- a context free grammar of the symbols 
+  -- a language model 
+  -- we construct our pipeline by building lexer and parser combination 
+  -- analyze the given states to find inverse realizable terminal sequences
+  -- do acceptance based off of that
+  
+
 -- main theorems (all require further refinement of lexer/parser)
 
 -- 1. if recognized by the lexer and parser, then in the constrained language
+
 
 -- 2. all prefixes are prefixes in the lexer/parser language
 
