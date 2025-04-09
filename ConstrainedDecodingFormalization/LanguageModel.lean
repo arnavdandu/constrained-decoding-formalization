@@ -25,7 +25,7 @@ abbrev LanguageModel ( α β ) [ Token α β ] := List α → β
 
 
 --  
-partial def constrained_decoding ( ) := by sorry
+-- partial def constrained_decoding ( ) := by sorry
   -- given 
   -- a constrained lexing automata (symbols )
   -- a context free grammar of the symbols 
