@@ -16,6 +16,7 @@ General propositions about constrained decoding
 
 \begin{definition}[Language Model]
     \label{def:LanguageModel}
+    \uses{def:XVocabulary}
     
     A \emph{language model} is given by some function $L: \alphabet^{*} \to \xvocab$.
 \end{definition}
@@ -28,7 +29,7 @@ General propositions about constrained decoding
 
 \begin{definition}[Constrained Decoding]
     \label{def:ConstrainedDecoding}
-    \uses{def:LanguageModel, def:Checker}
+    \uses{def:LanguageModel,def:Checker,def:Vocabulary}
     \[
     \begin{array}{l}
     \textbf{Algorithm: ConstrainedDecoding} \\
@@ -50,7 +51,7 @@ Theoretically, another way of formalizing this would be to consider the Intermed
 
 \begin{definition}[Checker Intermediate Language]
     \label{def:CheckerIntermediateLanguage}
-    \uses{def:Checker}
+    \uses{def:Checker,def:Vocabulary}
     The checker intermediate language for some checker $C$ is defined recursively:
     \begin{itemize}
         \item $\epsilon \in \langint$
