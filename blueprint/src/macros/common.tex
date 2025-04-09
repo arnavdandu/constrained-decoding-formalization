@@ -14,6 +14,30 @@
 	{\textcolor{#3}{\sf\small \textit{#2}}}
 }
 
+\numberwithin{equation}{subsection}
+\newtheorem{theorem}{Theorem}
+\newtheorem*{theoremx}{Theorem} % theorem not in dep graph
+\newtheorem*{remarkx}{Remark} % unnumbered remark
+\numberwithin{theorem}{subsection}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{lemmax}[theorem]{Lemma} % lemma not in dep graph
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{conjecture}[theorem]{Conjecture}
+\newtheorem{problem}[theorem]{Problem}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{defprop}[theorem]{Definition/Proposition}
+
+\theoremstyle{definition}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{exercise}[theorem]{Exercise}
+\newtheorem{warning}[theorem]{Warning}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{question}[theorem]{Question}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{examples}[theorem]{Examples}
+\newtheorem{observation}[theorem]{Observation}
+
 \newcommand{\mbc}[1]{{\color{red}[Manu: #1]}}
 \newcommand\kh[1]{\nbc{KP}{#1}{brown}}
 \newcommand{\khchanged}[1]{\textcolor{violet}{#1}}
