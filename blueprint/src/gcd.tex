@@ -1,0 +1,83 @@
+\section{Grammar Constrained Decoding}
+
+\begin{definition}[Detokenizer]
+    \label{def:Detokenizer}
+    todo
+\end{definition}
+
+\subsection{Lexing}
+\begin{definition}[Partial Lexer]
+    \label{def:PartialLexer}
+    \begin{itemize}
+    \item $\lexer(\epsilon) = (\epsilon, \epsilon)$
+    \item Given $\lexer(w) = (T_1 \ldots T_k, w_r)$, the value of $\lexer(wc)$ is
+        \begin{itemize}
+        \item $(T_1 \ldots T_k T^j \$, \epsilon)$ if $c = \eos$ and $w_r \in \lang(\automaton^j)$ for some $j$
+        \item $(T_1 \ldots T_k, w_r c)$ if $c \neq \eos$ and $w_r c \in \langpre(\automaton^i)$ for some $i$
+        \item $(T_1 \ldots T_k T^j, c)$ if $c \neq \eos$ and $w_r \in \lang(\automaton^j)$ but $w_r c \notin \langpre(\automaton^i)$ for all $i$
+        \item $\bot$ otherwise % (i.e., $w_r \notin \lang(\automaton^i)$ and $w_r c \notin \langpre(\automaton^i)$ for all $i$)
+        \end{itemize}
+    \end{itemize}
+\end{definition}
+
+\begin{theorem}[\texttt{Lex} returns iff input is Language of Lexer Specification]
+    \label{thm:LexSplit}
+    we can also mention one look ahead part / maximal much part here too
+    todo 
+\end{theorem}
+
+\begin{definition}[Lexing Transducer]
+    \label{def:Lexing Transducer}
+    Formed from the set of 
+    todo
+\end{definition}
+
+
+\begin{theorem}[Lexing Transducer Equivalent to \texttt{Lex}]
+    \label{thm:LexingTransducerLexEquiv}
+    \uses{Transducer, def:Partial Lexer}
+    Let \(\mathcal{T}_A = (Q, \Sigma, \Gamma, q_0, \delta, F)\) be a lexing transducer for the lexer specification \(\{(\mathcal{A}^i, T^i)\}_i\). Then 
+\[
+    q_0 \xrightarrow{w : T_1 \ldots T_k}{}^* q' \in \delta^* \quad \text{if and only if} \quad \texttt{Lex}(w) = (T_1 \ldots T_k, w_r)
+    \]
+    for some \(w_r \in \Sigma^*\) and \(q' \in Q\) such that \(q_0 \xrightarrow{w_r : \epsilon}{}^* q'\).
+\end{theorem}
+
+\begin{definition}[Parser]
+    \label{def:Parser}
+    todo
+\end{definition}
+
+\begin{definition}[PreprocessParser]
+    \label{def:PreprocessParser}
+    \uses{def:Pushdown Automata, def:Parser}
+    todo
+\end{definition}
+
+\begin{definition}[GCDChecker]
+    \label{def:GCDChecker}
+    The actual gcd checker is given by first producing the lexing transducer
+    todo
+\end{definition}
+
+% Main Theorems
+\begin{theorem}[GCDChecker Sound]
+    the GCD checker is in fact sound
+    todo 
+\end{theorem}
+
+\begin{theorem}[Prefix Language GCDChecker subset Prefix Language of Grammar]
+        
+    todo 
+\end{theorem}
+
+\begin{theorem}[Language of Grammar subset of GCD Checker]
+        
+    todo 
+\end{theorem}
+
+\begin{theorem}[Language of GCD Checker subset of Grammar]
+    This direction is trivial 
+    todo 
+\end{theorem}
+
