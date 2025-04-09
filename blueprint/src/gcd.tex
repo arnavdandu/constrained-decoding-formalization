@@ -35,7 +35,7 @@
 
 \begin{theorem}[Lexing Transducer Equivalent to \texttt{Lex}]
     \label{thm:LexingTransducerLexEquiv}
-    \uses{Transducer, def:Partial Lexer}
+    \uses{def:PartialLexer}
     Let \(\mathcal{T}_A = (Q, \Sigma, \Gamma, q_0, \delta, F)\) be a lexing transducer for the lexer specification \(\{(\mathcal{A}^i, T^i)\}_i\). Then 
 \[
     q_0 \xrightarrow{w : T_1 \ldots T_k}{}^* q' \in \delta^* \quad \text{if and only if} \quad \texttt{Lex}(w) = (T_1 \ldots T_k, w_r)
