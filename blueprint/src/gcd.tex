@@ -12,9 +12,9 @@
     \item $\lexer(\epsilon) = (\epsilon, \epsilon)$
     \item Given $\lexer(w) = (T_1 \ldots T_k, w_r)$, the value of $\lexer(wc)$ is
         \begin{itemize}
-        \item $(T_1 \ldots T_k T^j \$, \epsilon)$ if $c = \texttt{EOS}$ and $w_r \in \lang(\automaton^j)$ for some $j$
-        \item $(T_1 \ldots T_k, w_r c)$ if $c \neq \texttt{EOS}$ and $w_r c \in \langpre(\automaton^i)$ for some $i$
-        \item $(T_1 \ldots T_k T^j, c)$ if $c \neq \texttt{EOS}$ and $w_r \in \lang(\automaton^j)$ but $w_r c \notin \langpre(\automaton^i)$ for all $i$
+        \item $(T_1 \ldots T_k T^j \$, \epsilon)$ if $c = \eos$ and $w_r \in \lang(\automaton^j)$ for some $j$
+        \item $(T_1 \ldots T_k, w_r c)$ if $c \neq \eos$ and $w_r c \in \langpre(\automaton^i)$ for some $i$
+        \item $(T_1 \ldots T_k T^j, c)$ if $c \neq \eos$ and $w_r \in \lang(\automaton^j)$ but $w_r c \notin \langpre(\automaton^i)$ for all $i$
         \item $\bot$ otherwise % (i.e., $w_r \notin \lang(\automaton^i)$ and $w_r c \notin \langpre(\automaton^i)$ for all $i$)
         \end{itemize}
     \end{itemize}
@@ -62,21 +62,23 @@
 
 % Main Theorems
 \begin{theorem}[GCDChecker Sound]
+    \label{thm:GCDCheckerSound}
     the GCD checker is in fact sound
     todo 
 \end{theorem}
 
 \begin{theorem}[Prefix Language GCDChecker subset Prefix Language of Grammar]
-        
+    \label{thm:PrefixLanguageGCDCheckerSubsetPrefixLanguage} 
     todo 
 \end{theorem}
 
 \begin{theorem}[Language of Grammar subset of GCD Checker]
-        
+    \label{thm:LangGrammarSubsetGCDChecker}
     todo 
 \end{theorem}
 
 \begin{theorem}[Language of GCD Checker subset of Grammar]
+    \label{thm:LangGCDCheckerSubsetGrammar}
     This direction is trivial 
     todo 
 \end{theorem}
