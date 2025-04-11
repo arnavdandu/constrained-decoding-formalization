@@ -1,85 +1,59 @@
-\section{Grammar Constrained Decoding}
 
-\begin{definition}[Detokenizer]
-    \label{def:Detokenizer}
-    todo
-\end{definition}
-
-\subsection{Lexing}
-\begin{definition}[Partial Lexer]
-    \label{def:PartialLexer}
-    \begin{itemize}
-    \item $\lexer(\epsilon) = (\epsilon, \epsilon)$
-    \item Given $\lexer(w) = (T_1 \ldots T_k, w_r)$, the value of $\lexer(wc)$ is
-        \begin{itemize}
-        \item $(T_1 \ldots T_k T^j \$, \epsilon)$ if $c = \eos$ and $w_r \in \lang(\automaton^j)$ for some $j$
-        \item $(T_1 \ldots T_k, w_r c)$ if $c \neq \eos$ and $w_r c \in \langpre(\automaton^i)$ for some $i$
-        \item $(T_1 \ldots T_k T^j, c)$ if $c \neq \eos$ and $w_r \in \lang(\automaton^j)$ but $w_r c \notin \langpre(\automaton^i)$ for all $i$
-        \item $\bot$ otherwise % (i.e., $w_r \notin \lang(\automaton^i)$ and $w_r c \notin \langpre(\automaton^i)$ for all $i$)
-        \end{itemize}
-    \end{itemize}
-\end{definition}
-
-\begin{theorem}[\texttt{Lex} returns iff input is Language of Lexer Specification]
-    \label{thm:LexSplit}
-    we can also mention one look ahead part / maximal much part here too
-    todo 
-\end{theorem}
-
-\begin{definition}[Lexing Transducer]
-    \label{def:Lexing Transducer}
-    Formed from the set of 
-    todo
-\end{definition}
-
-
-\begin{theorem}[Lexing Transducer Equivalent to \texttt{Lex}]
-    \label{thm:LexingTransducerLexEquiv}
-    \uses{def:PartialLexer}
-    Let \(\mathcal{T}_A = (Q, \Sigma, \Gamma, q_0, \delta, F)\) be a lexing transducer for the lexer specification \(\{(\mathcal{A}^i, T^i)\}_i\). Then 
-\[
-    q_0 \xrightarrow{w : T_1 \ldots T_k}{}^* q' \in \delta^* \quad \text{if and only if} \quad \texttt{Lex}(w) = (T_1 \ldots T_k, w_r)
-    \]
-    for some \(w_r \in \Sigma^*\) and \(q' \in Q\) such that \(q_0 \xrightarrow{w_r : \epsilon}{}^* q'\).
-\end{theorem}
-
-\begin{definition}[Parser]
-    \label{def:Parser}
-    todo
-\end{definition}
-
-\begin{definition}[PreprocessParser]
-    \label{def:PreprocessParser}
-    \uses{def:Pushdown Automata, def:Parser}
-    todo
-\end{definition}
-
+\subsection{Grammar Constrained Decoding}
 \begin{definition}[GCDChecker]
     \label{def:GCDChecker}
+    \uses{def:}
+    The actual GCD checker is constructed as follows. We are given the lexer specification and the context free grammar.
+    First, build the composite transducer $\transducer_{\alphabet \circ \vocab}$
+    Next, build the parser $\pushdown$ associated with the CFG.
     The actual gcd checker is given by first producing the lexing transducer
     todo
 \end{definition}
 
-% Main Theorems
-\begin{theorem}[GCDChecker Sound]
-    \label{thm:GCDCheckerSound}
-    the GCD checker is in fact sound
-    todo 
-\end{theorem}
+% theorems related to what Kanghee sent
+\begin{theorem}[Prefix Sound] 
 
-\begin{theorem}[Prefix Language GCDChecker subset Prefix Language of Grammar]
-    \label{thm:PrefixLanguageGCDCheckerSubsetPrefixLanguage} 
-    todo 
 \end{theorem}
 
 \begin{theorem}[Language of Grammar subset of GCD Checker]
-    \label{thm:LangGrammarSubsetGCDChecker}
-    todo 
+    \label{thm:GrammarSubsetCheckerLang}
+    The sentences of the CFG is a subset of the language of the GCD checker, modulo conversion between $\alphabet$ and $\vocab$.
 \end{theorem}
 
 \begin{theorem}[Language of GCD Checker subset of Grammar]
-    \label{thm:LangGCDCheckerSubsetGrammar}
-    This direction is trivial 
-    todo 
+    \label{thm:CheckerLangSubsetGrammar}
+    The language of the GCD checker is a subset of the sentences of the CFG, modulo conversion between $\alphabet$ and $\vocab$.
 \end{theorem}
+\begin{proof}
+    This direction is trivial 
+\end{proof}
+
+\begin{theorem}[Prefix Language of Grammar subset Intermediate Language GCDChecker]
+    \label{thm:PrefixSubsetIntermediate} 
+    The prefixes of sentences of the CFG is a subset of the intermediate language of the GCD checker, modulo conversion between $\alphabet$ and $\vocab$.
+\end{theorem}
+
+\begin{theorem}[Intermediate Language GCDChecker subset Prefix Language of Grammar]
+    \label{thm:IntermediateSubsetPrefix} 
+    The intermediate language of the GCD checker is a subset of the prefixes of sentences of the CFG, modulo conversion between $\alphabet$ and $\vocab$.
+\end{theorem}
+
+Here are the final theorems that we want to ultimately prove. \ref{thm:LexSplit} may also be included as a final theorem.
+\begin{theorem}[GCDChecker Complete]
+    \label{thm:GCDCheckerComplete}
+    \uses{def:CheckerSound,def:CFGLang,thm:GrammarSubsetCheckerLang,thm:CheckerLangSubsetGrammar, thm:PrefixSubsetIntermediate, thm:IntermediateSubsetPrefix}
+    The GCD Checker is complete with respect to the language (sentences) of the CFG.
+\end{theorem}
+\begin{proof}
+    Follows from above lemmas.
+\end{proof}
+
+\begin{theorem}[GCDChecker Sound]
+    \label{thm:GCDCheckerSound}
+    \uses{def:CheckerSound}
+    The GCD checker is in fact sound.
+\end{theorem}
+\begin{proof}
+    The first property follows from completeness. The second one should be provable based on the fact that the lexing transducer itself is path independent? We'll have to think about it more.
+\end{proof}
 

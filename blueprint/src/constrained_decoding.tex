@@ -1,5 +1,5 @@
 
-\section{Constrained Decoding}
+\subsection{Constrained Decoding}
 General propositions about constrained decoding
 
 
@@ -94,7 +94,7 @@ NB: unless a checker is \emph{sound}, do note that strings in the checker interm
 
     \begin{enumerate}
         \item $w \in \langint$ implies that there exists some $w' \in \lang$ such that $w$ is a prefix of $w'$. Informally, you never run into a case where a language model has no choices for what to output.
-        \item $w \in \langint$ implies that if $w = w'v$ for some $w' \in \alphabet^*, v \in \vocab$, then $w' \in \langint$. Informally, the checker is path independent.
+        \item $w \in \langint$ implies that if $w = w'v$ for some $w' \in \alphabet^*, v \in \vocab$, then $w' \in \langint$ and $v \in C(w')$. Informally, the checker is path independent.
     \end{enumerate}
 
     In particular, this implies that $\langint$ is exactly the set of prefixes of checker language $\lang$.

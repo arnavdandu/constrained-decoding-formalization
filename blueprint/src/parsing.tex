@@ -1,0 +1,27 @@
+\subsection{Parsing}
+Results related to construction of the PDA
+\begin{definition}[Parser]
+    \label{def:Parser}
+    \uses{def:PDA}
+    Given an input context free grammar, build a pushdown automata that recognizes the CFG. Delaying details of the algorithm until Lean formalization time, but I'm sure there's a well known construction.
+\end{definition}
+
+\begin{theorem}[Parser Equivalent to CFG] 
+    \label{thm:ParserEquivCFG}
+    \uses{def:Parser,def:CFG}
+    Let $\pushdown$ be the PDA as constructed above. A terminal sequence is accepted by $\pushdown$ if and only if it is a member of the input CFG.
+\end{theorem}
+
+\begin{theorem}[Parser Lexer Equivalent to CFG Sentences] 
+    \label{thm:ParserLexerEquivCFGSentences}
+    \uses{def:Parser,def:CFGSentences,thm:ParserEquivCFG}
+    Let $\pushdown \circ \transducer_{\automata}$ denote the composition between the parser and lexing transducer.
+    An input string $w \in \alphabet^{*}$ is accepted by $\pushdown \circ \transducer_{\automata}$ if and only if it is a sentence in the original CFG (with respect to $\lexer$).
+\end{theorem}
+
+\begin{theorem}[Parser Lexer Detokenizer Equivalent to CFG Sentences] 
+    \label{thm:ParserLexerDetokenizerEquivCFGSentences}
+    \uses{def:Parser,thm:ParserLexerEquivCFGSentences}
+    Let $\pushdown \circ \transducer_{\automata \circ \vocab}$ denote the composition between the parser and lexing transducer and detokenizer.
+    An input string $w \in \vocab^{*}$ is accepted by $\pushdown \circ \transducer_{\automata \circ \vocab}$ if and only if $F(w)$ (the string over $\alphabet^{*}$) is a sentence in the original CFG (with respect to $\lexer$).
+\end{theorem}
