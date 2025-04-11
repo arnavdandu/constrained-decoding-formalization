@@ -1,169 +1,3 @@
-\section{Grammar Constrained Decoding}
-
-\subsection{Background}
-\begin{definition}[Finite State Automata]
-    \label{def:FSA}
-    See Mathlib
-\end{definition}
-
-\begin{definition}[Finite State Transducer]
-    \label{def:FST}
-    FST is an FSA except that transitions can have labels onto an output alphabet.
-\end{definition}
-
-\begin{definition}[Context Free Grammar]
-    \label{def:CFG}
-    See Mathlib. 
-\end{definition}
-
-\begin{definition}[Lexer]
-    \label{def:Lexer}
-    A lexer is a function from $\alphabet^{*}$ to $\terms^{*} \times \alphabet^{*}$, denoting the lexed and unlexed portions of the string
-
-\begin{definition}[CFG Sentences]
-    \label{def:CFGSentences}
-    \uses{def:CFG,def:Lexer}
-    The sentences of a CFG with respect to some function $\lexer$ is the set of strings $w$ such that $\lexer(w)$ is a member of the context free grammar.
-\end{definition}
-
-\begin{definition}[Pushdown Automata]
-    \label{def:PDA}
-    A \emph{pushdown automaton} is a tuple $P = (\Sigma, \Pi, Q, q_0, Z_0, \delta, F)$ where:
-    \begin{itemize}
-        \item $\Sigma$ is the input alphabet,
-        \item $\Pi$ is the stack alphabet,
-        \item $Q$ is the set of states,
-        \item $q_0 \in Q$ is the initial state,
-        \item $Z_0 \in \Pi$ is the initial stack symbol,
-        \item $F \subseteq Q$ is the set of accepting states,
-        \item $\delta \subseteq Q \times (\Sigma \cup \{\epsilon\}) \times \Pi^* \times Q \times \Pi^*$ is the transition relation.
-    \end{itemize}
-
-    Each transition $(q, c, \alpha, q', \beta)$ specifies that, in state $q$, upon reading the input symbol $c$ and matching the top stack symbols to $\alpha$, the PDA transitions to state $q'$ and replaces $\alpha$ with the sequence $\beta$ on the stack.
-\end{definition}
-
-\subsection{Lexing}
-Results related to the lexing and detokenizing.
-
-\begin{definition}[Lexer Specification]
-	\label{def:LexerSpecification}
-    A \emph{lexer specification} is given as a finite set of pairs, each consisting of an automaton $\automaton^i = (Q^i, \alphabet^i, q_{0}^{i}, \delta^i, F^i)$ and a terminal symbol $T^i \in \terms$.
-\end{definition}
-If we want to make a connection between regular expressions and finite state automata, here would be the place. In particular, we would change the lexer specification from a set of FSA, to a set of regular expressions (and then must prove the conversion process to automata preserves the language).
-
-\begin{definition}[Partial Lexer]
-    \label{def:PartialLexer}
-    \uses{def:LexerSpecification}
-    \begin{itemize}
-    \item $\lexer(\epsilon) = (\epsilon, \epsilon)$
-    \item Given $\lexer(w) = (T_1 \ldots T_k, w_r)$, the value of $\lexer(wc)$ is
-        \begin{itemize}
-        \item $(T_1 \ldots T_k T^j \$, \epsilon)$ if $c = \eos$ and $w_r \in \lang(\automaton^j)$ for some $j$
-        \item $(T_1 \ldots T_k, w_r c)$ if $c \neq \eos$ and $w_r c \in \langpre(\automaton^i)$ for some $i$
-        \item $(T_1 \ldots T_k T^j, c)$ if $c \neq \eos$ and $w_r \in \lang(\automaton^j)$ but $w_r c \notin \langpre(\automaton^i)$ for all $i$
-        \item $\bot$ otherwise % (i.e., $w_r \notin \lang(\automaton^i)$ and $w_r c \notin \langpre(\automaton^i)$ for all $i$)
-        \end{itemize}
-    \end{itemize}
-\end{definition}
-
-\begin{theorem}[\lexer returns iff input is Language of Lexer Specification]
-    \label{thm:LexSplit}
-    \uses{def:PartialLexer,def:LexerSpecification}
-    Let $\lang(A_i)$ be the languages of each input automata.
-    If $\lexer$ fails to return on some input string $w$, then among all possible partitions of $w$ into a set of strings $w_1 \ldots w_k$, there exists an $i$ such that $w_i \notin \lang(A_j)$ for all j. Conversely, if $\texttt{Lex} = (T_1, \ldots T_k, \epsilon)$, then $w$ may be partitioned into $w_1 \ldots w_k$ such that $w$ is the concatenation of $w_1 \ldots w_k$ and each $w_i \in \lang(A_j)$ for some $j$.
-\end{theorem}
-We can possibly make the second direction stronger and mention how the partition it produces is related to maximal munching / 1-lookahead.
-
-\begin{definition}[DetokenizingFST]
-    \label{def:DetokenizingFST}
-    \uses{def:Finite-State Transducer, def:Detokenizer}
-    \begin{array}{l}
-        \textbf{Input:} \text{Vocabulary } \mathcal{V} \subseteq \Sigma^+ \\
-        \textbf{Output:} \text{FST } \mathcal{T}_\mathcal{V} = (\mathcal{V}, \Sigma, Q, q_0, \delta, F) \\
-        Q := \{q_\epsilon\},\quad F := \{q_\epsilon\},\quad q_0 := q_\epsilon,\quad \delta := \emptyset \\
-        \text{for } c_1 \ldots c_k \in \mathcal{V} \text{ do} \\
-        \quad q_{\text{prev}} := q_\epsilon \\
-        \quad \text{for } i = 1 \text{ to } k-1 \text{ do} \\
-        \quad\quad Q := Q \cup \{q_{c_1 \ldots c_i}\} \\
-        \quad\quad \delta := \delta \cup \{ q_{\text{prev}} \xrightarrow{c_i:\epsilon} q_{c_1 \ldots c_i} \} \\
-        \quad\quad q_{\text{prev}} := q_{c_1 \ldots c_i} \\
-        \quad \delta := \delta \cup \{ q_{\text{prev}} \xrightarrow{c_k:c_1\ldots c_k} q_\epsilon \} \\
-        \textbf{return } \mathcal{T}_\mathcal{V} = (\mathcal{V}, \Sigma, Q, q_0, \delta, F)
-    \end{array}
-\end{definition}
-
-\begin{definition}[Lexing Transducer]
-    \label{def:LexingTransducer}
-    \uses{def:Finite-State Automata, def:Lexing Transducer}
-    \begin{array}{l}
-        \textbf{Input:} \text{FSA } \mathcal{A} = (\Sigma, Q, q_0, \delta, F), \text{ Output alphabet } \Gamma \\
-        \textbf{Output:} \text{FST } \mathcal{T}_A = (\Sigma, \Gamma, Q, q_0, \delta_{\text{FST}}, F_{\text{FST}}) \\
-        \delta_{\text{FST}} := \{ q \xrightarrow{c:\epsilon} q' \mid q \xrightarrow{c} q' \in \delta \} \\
-        F_{\text{FST}} := \{q_0\} \\
-        \text{for state } q \text{ that recognizes language token } T \in \Gamma \text{ do} \\
-        \quad \text{for } (c, q') \text{ s.t. } \exists q''. q \xrightarrow{c} q'' \notin \delta \text{ and } q_0 \xrightarrow{c} q' \in \delta \text{ do} \\
-        \quad\quad \delta_{\text{FST}} := \delta_{\text{FST}} \cup \{ q \xrightarrow{c:T} q' \} \\
-        \quad \delta_{\text{FST}} := \delta_{\text{FST}} \cup \{ q \xrightarrow{\text{EOS}:T\Phi} q_0 \} \\
-        \textbf{return } \mathcal{T}_A = (\Sigma, \Gamma, Q, q_0, \delta_{\text{FST}}, F_{\text{FST}})
-    \end{array}
-\end{definition}
-
-\begin{theorem}[Lexing Transducer Equivalent to \lexer]
-    \label{thm:LexingTransducerLexEquiv}
-    \uses{def:PartialLexer, def:LexingTransducer}
-    \begin{enumerate}
-        \item If $\lexer(w)$ fails to return for some input string $w$, then the transducer does not accept $w$
-        \item If $\lexer(w) = (T_1, \ldots T_k, \epsilon)$, then the transducer produces $T_1 \ldots T_k$ upon reading $w$.
-    \end{enumerate}
-\end{theorem}
-\begin{proof}
-    (incomplete)
-    Let \(\mathcal{T}_A = (Q, \Sigma, \Gamma, q_0, \delta, F)\) be a lexing transducer for the lexer specification \(\{(\mathcal{A}^i, T^i)\}_i\). Then 
-\[
-    q_0 \xrightarrow{w : T_1 \ldots T_k}{}^* q' \in \delta^* \quad \text{if and only if} \quad \lexer(w) = (T_1 \ldots T_k, w_r)
-    \]
-    for some \(w_r \in \Sigma^*\) and \(q' \in Q\) such that \(q_0 \xrightarrow{w_r : \epsilon}{}^* q'\).
-\end{proof}
-
-\begin{theorem}[Composite Transducer Equivalent to \lexer]
-    \label{thm:CompositeLexTransducerLexEquiv}
-    Let $\transducer_{\automata \circ \vocab}$ denote the (determinized) composition of the lexer and transducer. Let $F : \vocab^{*} \to \alphabet^{*}$ denote the map that transforms strings over $\vocab$ to strings over $\alphabet$. Let $v \in \vocab^{*}$.
-
-    \begin{enumerate}
-        \item If $\lexer(F(v))$ fails to return, then $\transducer_{\automata \circ \vocab}$ does not accept $v$
-        \item If $\lexer(F(v)) = (T_1, \ldots T_k, \epsilon)$, then the transducer produces $T_1 \ldots T_k$ upon reading $v$.
-    \end{enumerate}
-\end{theorem}
-\begin{proof}
-    This should largely follow from the correctness of composition (and will likely be a lemma)
-\end{proof}
-
-\subsection{Parsing}
-Results related about steps downstream of lexing.
-\begin{definition}[Parser]
-    \label{def:Parser}
-    Given an input context free grammar, build a pushdown automata that recognizes the CFG. Delaying details of the algorithm until Lean formalization time, but I'm sure there's a well known construction.
-\end{definition}
-
-\begin{theorem}[PDA Equivalent to CFG] 
-    \label{thm:PDAEquivCFG}
-    \uses{def:Parser}
-    Let $\pushdown$ be the PDA as constructed above. A terminal sequence is accepted by $\pushdown$ if and only if it is a member of the input CFG.
-\end{theorem}
-
-\begin{theorem}[PDA Lexer Equivalent to CFG Sentences] 
-    \label{thm:PDALexerEquivCFGLang}
-    \uses{def:Parser,def:CFGSentences}
-    Let $\pushdown \circ \transducer_{\automata}$ denote the composition between the parser and lexing transducer.
-    An input string $w \in \alphabet^{*}$ is accepted by $\pushdown \circ \transducer_{\automata}$ if and only if it is a sentence in the original CFG (with respect to $\lexer$).
-\end{theorem}
-
-\begin{theorem}[PDA Lexer Detokenizer Equivalent to CFG Sentences] 
-    \label{thm:PDALexerDetokenizerEquivCFGLang}
-    \uses{def:Parser,}
-    Let $\pushdown \circ \transducer_{\automata \circ \vocab}$ denote the composition between the parser and lexing transducer and detokenizer.
-    An input string $w \in \vocab^{*}$ is accepted by $\pushdown \circ \transducer_{\automata \circ \vocab}$ if and only if $F(w)$ (the string over $\alphabet^{*}$) is a sentence in the original CFG (with respect to $\lexer$).
-\end{theorem}
 
 \subsection{Grammar Constrained Decoding}
 \begin{definition}[GCDChecker]
@@ -175,6 +9,11 @@ Results related about steps downstream of lexing.
     The actual gcd checker is given by first producing the lexing transducer
     todo
 \end{definition}
+
+% theorems related to what Kanghee sent
+\begin{theorem}[Prefix Sound] 
+
+\end{theorem}
 
 \begin{theorem}[Language of Grammar subset of GCD Checker]
     \label{thm:GrammarSubsetCheckerLang}
@@ -202,7 +41,7 @@ Results related about steps downstream of lexing.
 Here are the final theorems that we want to ultimately prove. \ref{thm:LexSplit} may also be included as a final theorem.
 \begin{theorem}[GCDChecker Complete]
     \label{thm:GCDCheckerComplete}
-    \uses{def:CheckerSound,def:CFGLang}
+    \uses{def:CheckerSound,def:CFGLang,thm:GrammarSubsetCheckerLang,thm:CheckerLangSubsetGrammar, thm:PrefixSubsetIntermediate, thm:IntermediateSubsetPrefix}
     The GCD Checker is complete with respect to the language (sentences) of the CFG.
 \end{theorem}
 \begin{proof}

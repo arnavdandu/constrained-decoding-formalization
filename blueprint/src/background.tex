@@ -1,34 +1,47 @@
-\section{Background}
+\subsection{Background}
 We introduce some well known concepts and proofs.
+\begin{definition}[Finite State Automata]
+    \label{def:FSA}
+    See Mathlib
+\end{definition}
+
+\begin{definition}[Regular Expressions]
+    \label{def:RE}
+    See Mathlib
+\end{definition}
+
+\begin{definition}[Finite State Transducer]
+    \label{def:FST}
+    FST is an FSA except that transitions can have labels onto an output alphabet.
+\end{definition}
+
+\begin{definition}[Context Free Grammar]
+    \label{def:CFG}
+    See Mathlib. 
+\end{definition}
+
+\begin{definition}[Lexer]
+    \label{def:Lexer}
+    A lexer is a function from $\alphabet^{*}$ to $\terms^{*} \times \alphabet^{*}$, denoting the lexed and unlexed portions of the string
+
+\begin{definition}[CFG Sentences]
+    \label{def:CFGSentences}
+    \uses{def:CFG,def:Lexer}
+    The sentences of a CFG with respect to some function $\lexer$ is the set of strings $w$ such that $\lexer(w)$ is a member of the context free grammar.
+\end{definition}
 
 \begin{definition}[Pushdown Automata]
-	\label{def:Pushdown Automata}
-	todo
+    \label{def:PDA}
+    A \emph{pushdown automaton} is a tuple $P = (\Sigma, \Pi, Q, q_0, Z_0, \delta, F)$ where:
+    \begin{itemize}
+        \item $\Sigma$ is the input alphabet,
+        \item $\Pi$ is the stack alphabet,
+        \item $Q$ is the set of states,
+        \item $q_0 \in Q$ is the initial state,
+        \item $Z_0 \in \Pi$ is the initial stack symbol,
+        \item $F \subseteq Q$ is the set of accepting states,
+        \item $\delta \subseteq Q \times (\Sigma \cup \{\epsilon\}) \times \Pi^* \times Q \times \Pi^*$ is the transition relation.
+    \end{itemize}
+
+    Each transition $(q, c, \alpha, q', \beta)$ specifies that, in state $q$, upon reading the input symbol $c$ and matching the top stack symbols to $\alpha$, the PDA transitions to state $q'$ and replaces $\alpha$ with the sequence $\beta$ on the stack.
 \end{definition}
-
-\begin{definition}[Context-Free Grammar]
-	\label{def:Context-Free Grammar}
-    %\leanok
-	todo
-\end{definition}
-
-\begin{theorem}[Pushdown Automata Language equivalent to Context Free Grammer]
-    \label{thm:pda-equiv}
-
-\end{theorem}
-
-\begin{definition}[Finite-State Transducer]
-	\label{def:Finite-State Transducer}
-    %\lean{FST}
-    %\leanok 
-	\uses{def:Finite-State Automata}
-	todo
-\end{definition}
-
-\begin{definition}[Finite-State Automata]
-	\label{def:Finite-State Automata}
-    %\lean{FSA}
-    %\leanok 
-	todo
-\end{definition}
-
