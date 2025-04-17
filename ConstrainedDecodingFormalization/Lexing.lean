@@ -66,26 +66,28 @@ inductive LexRel (specs : List (LexerSpec α β σ)) :
   | empty :
       LexRel specs [] [] []
 
+  -- (T₁...Tₖ T^j, ε) if c = EOS and wr ∈ L(A^j)
   | done {wr tj} :
       isToken specs wr = some tj →
       LexRel specs wr [tj] []
 
+  -- (T₁...Tₖ, wrc) if c ≠ EOS and wrc ∈ L_prefix(A^i) for some i
+  -- → (T₁...Tₖ T^j, c :: cs) if wr ∈ L(A^j) but wrc ∉ L_prefix(A^i) for all i.
   | emit {wr c cs tj T} :
       isToken specs wr = some tj →
       ¬ isPrefix specs (wr ++ [c]) →
       LexRel specs (c :: cs) T [] →
       LexRel specs (wr ++ c :: cs) (tj :: T) wr
 
+  -- (T₁...Tₖ, wrc) if c ≠ EOS and wrc ∈ L_prefix(A^i) for some i.
   | extend {wr c cs T} :
       isPrefix specs (wr ++ [c]) →
       LexRel specs cs T (wr ++ [c]) →
       LexRel specs (c :: cs) T wr
 
-
 noncomputable def PartialLex (specs : List (LexerSpec α β σ)) (w : List α) : Option (List β × List α) :=
   if h : ∃ out : List β × List α, LexRel specs w out.1 out.2 then
-    let p := Classical.choose h
-    some p
+    some (choose h)
   else none
 
 end Symbols
