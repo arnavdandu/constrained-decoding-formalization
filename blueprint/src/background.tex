@@ -27,7 +27,14 @@ We introduce some well known concepts and proofs.
 \begin{definition}[CFG Sentences]
     \label{def:CFGSentences}
     \uses{def:CFG,def:Lexer}
-    The sentences of a CFG with respect to some function $\lexer$ is the set of strings $w$ such that $\lexer(w)$ is a member of the context free grammar.
+    The sentences of a CFG, denoted $\lang^{\lexer}(\grammar)$, with respect to some function $\lexer$ is the set of strings $w$ such that $\lexer(w)$ is a member of the context free grammar.
+\end{definition}
+
+
+\begin{definition}[CFG Prefix Language]
+    \label{def:CFGPrefixLanguage}
+    \uses{def:CFG,def:Lexer,def:CFGSentences}
+    The (lexer) prefix language of a grammar $\grammar$, denoted $\langpre^\lexer(\grammar)$, is the set of all prefixes of sentences of the grammar.
 \end{definition}
 
 \begin{definition}[Pushdown Automata]

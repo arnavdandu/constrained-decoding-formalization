@@ -52,6 +52,7 @@ We can possibly make the second direction stronger and mention how the partition
 \begin{definition}[DetokenizingFST]
     \label{def:DetokenizingFST}
     \uses{def:FST}
+    $
     \begin{array}{l}
         \textbf{Input:} \text{Vocabulary } \mathcal{V} \subseteq \Sigma^+ \\
         \textbf{Output:} \text{FST } \mathcal{T}_\mathcal{V} = (\mathcal{V}, \Sigma, Q, q_0, \delta, F) \\
@@ -65,11 +66,13 @@ We can possibly make the second direction stronger and mention how the partition
         \quad \delta := \delta \cup \{ q_{\text{prev}} \xrightarrow{c_k:c_1\ldots c_k} q_\epsilon \} \\
         \textbf{return } \mathcal{T}_\mathcal{V} = (\mathcal{V}, \Sigma, Q, q_0, \delta, F)
     \end{array}
+    $
 \end{definition}
 
 \begin{definition}[Lexing Transducer]
     \label{def:LexingTransducer}
     \uses{def:FSA, def:FST}
+    $
     \begin{array}{l}
         \textbf{Input:} \text{FSA } \mathcal{A} = (\Sigma, Q, q_0, \delta, F), \text{ Output alphabet } \Gamma \\
         \textbf{Output:} \text{FST } \mathcal{T}_A = (\Sigma, \Gamma, Q, q_0, \delta_{\text{FST}}, F_{\text{FST}}) \\
@@ -81,6 +84,7 @@ We can possibly make the second direction stronger and mention how the partition
         \quad \delta_{\text{FST}} := \delta_{\text{FST}} \cup \{ q \xrightarrow{\text{EOS}:T\Phi} q_0 \} \\
         \textbf{return } \mathcal{T}_A = (\Sigma, \Gamma, Q, q_0, \delta_{\text{FST}}, F_{\text{FST}})
     \end{array}
+    $
 \end{definition}
 
 \begin{theorem}[Lexing Transducer Equivalent to \lexer]
@@ -91,6 +95,7 @@ We can possibly make the second direction stronger and mention how the partition
         \item If $\lexer(w) = (T_1, \ldots T_k, \epsilon)$, then the transducer produces $T_1 \ldots T_k$ upon reading $w$.
     \end{enumerate}
 \end{theorem}
+
 \begin{proof}
     (incomplete)
     Let \(\mathcal{T}_A = (Q, \Sigma, \Gamma, q_0, \delta, F)\) be a lexing transducer for the lexer specification \(\{(\mathcal{A}^i, T^i)\}_i\). Then 
@@ -99,6 +104,12 @@ We can possibly make the second direction stronger and mention how the partition
     \]
     for some \(w_r \in \Sigma^*\) and \(q' \in Q\) such that \(q_0 \xrightarrow{w_r : \epsilon}{}^* q'\).
 \end{proof}
+
+\begin{theorem}[Lexing Transducer Memoryless]
+    \label{thm:LexingTransducerMemoryless}
+    Let $\transducer_{\automaton \circ \vocab} = (Q, \vocab, \terms, q_0, \delta, F)$ be a token-level lexing transducer for the lexer specification $\{(\automaton^i, T^i)\}_i$ and vocabulary $\vocab \subseteq \alphabet^+$. Then $q_0 \xrightarrow{w:T_1 \ldots T_k}^{\ast} q' \in \delta^\ast$
+    if and only if $\lexer(w) = (T_1 \ldots T_k, w_r)$ for some $w_r \in \alphabet^\ast$ and $q' \in Q$ such that $q_0 \xrightarrow{w_r:\epsilon}^\ast q'$.
+\end{theorem}
 
 \begin{theorem}[Composite Transducer Equivalent to \lexer]
     \label{thm:CompositeLexTransducerLexEquiv}
@@ -113,4 +124,3 @@ We can possibly make the second direction stronger and mention how the partition
 \begin{proof}
     This should largely follow from the correctness of composition (and will likely be a lemma)
 \end{proof}
-

@@ -1,6 +1,56 @@
 \subsection{Realizable Terminal Sequences}
+\begin{definition}[Realizable Terminal Sequence]
+    \label{def:RealizableTerminalSequence}
+    Given a token vocabulary $\mathcal{V}$ and FSA $\mathcal{A}$, let $\delta$ be the set of transitions in the token-level lexing transducer $\mathcal{T}_{\mathcal{A}} \circ \mathcal{T}_{\mathcal{V}}$. The set of \textit{realizable terminal sequences} $Re_{\mathcal{A} \circ \mathcal{V}}$ is defined as
+    \[
+    Re_{\mathcal{A} \circ \mathcal{V}} = \{ T_1 \ldots T_k T \mid q \xrightarrow{t:T_1 \ldots T_k} q' \in \delta \text{ and } T \text{ can be generated along some path from } q' \}.
+    \]
+\end{definition}
+
+\begin{definition}[Inverse Token Spanner Table]
+    \label{def:InverseTokenSpannerTable}
+    Given a lexer state $q \in Q_{\mathcal{A} \circ \mathcal{V}}$ and $T_1 \ldots T_k T \in Re_{\mathcal{A} \circ \mathcal{V}}$, the entry $T_{\text{inv}}(q, \alpha)$ in the \textit{inverse token spanner table} $T_{\text{inv}}$ is the set of tokens that generates $T_1 \ldots T_k T$ from state $q$. Formally,
+    \[
+    T_{\text{inv}}(q, T_1 \ldots T_k T) = \{ t \mid q \xrightarrow{t:T_1 \ldots T_k} q' \in \delta \text{ and } T \text{ can be generated along some path from } q' \}.
+    \]
+\end{definition}
+
+\begin{algorithm}[H]
+    \label{alg:BuildInverseTokenSpannerTable}
+    \caption{BuildInverseTokenSpannerTable}
+    \begin{algorithmic}[1]
+        \Require Combined FST \( \mathcal{T}_\mathcal{A} \circ \mathcal{T}_\mathcal{V} = (\mathcal{V}, \Gamma, Q, q_0, \delta, F) \)
+        \Ensure \( Re_{\mathcal{A} \circ \mathcal{V}} \): realizable token sequences, \\
+        \hspace{2.8em} \( T_{\text{inv}} : Re_{\mathcal{A} \circ \mathcal{V}} \times Q \to 2^{\mathcal{V}} \): inverse lookup table
+        \State \( Re_{\mathcal{A} \circ \mathcal{V}} \gets \emptyset \)
+        \State \( T_{\text{inv}}(\cdot, \cdot) \gets \emptyset \)
+        \ForAll{transition \( q \xrightarrow{t:T_1 \ldots T_k} q' \in \delta \)}
+        \ForAll{token \( T \) recognized at state \( q'' \), reachable from \( q' \)}
+        \State \( \text{sequence} \gets T_1 \ldots T_k T \)
+        \State \( Re_{\mathcal{A} \circ \mathcal{V}} \gets Re_{\mathcal{A} \circ \mathcal{V}} \cup \{ \text{sequence} \} \)
+        \State \( T_{\text{inv}}(q, \text{sequence}) \gets T_{\text{inv}}(q, \text{sequence}) \cup \{ t \} \)
+        \EndFor
+        \EndFor
+        \State \Return \( Re_{\mathcal{A} \circ \mathcal{V}}, T_{\text{inv}} \)
+    \end{algorithmic}
+\end{algorithm}
+
+\begin{theorem}[BuildITSTCorrect]
+    \label{thm:BuildITSTCorrect}
+    \uses{alg,def:InverseTokenSpannerTable}
+    The table produced by build inverse token spanner table is 
+}
+
 \begin{definition}[Producible]
     \label{def:Producible}
     Given a state $q$, the set of producible terminals $\producible(q)$ is defined as $\producible(q) = \{T_1 \in \terms \mid q \xrightarrow{w:T_1 \ldots T_k}^\ast q' \in \delta^\ast \textrm{ for some } q'\in Q, w \in \alphabet^\ast \}$
 \end{definition}
+
+\begin{theorem}[ProducibleITST]
+    \label{thm:ProducibleITST}
+    \uses{def:Producible,def:InverseTokenSpannerTable}
+    Given a token sequence $w \in \vocab^\ast$ such that $q_0 \xrightarrow{w: T_1 \ldots T_k}^\ast q'$, any $v \in \vocab$ and $T \in \terms$,
+    the token $v$ is in the inverse token spanner table entry $\inversetable(q', T_{k+1} \ldots T_m T)$
+    if and only if $q_0 \xrightarrow{wv: T_1 \ldots T_k T_{k+1} \ldots T_m}^\ast q''$ and $T \in \producible(q'')$.
+\end{theorem}
 
