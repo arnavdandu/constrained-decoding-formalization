@@ -15,15 +15,15 @@ Results related to construction of the PDA
 \begin{theorem}[Parser Lexer Equivalent to CFG Sentences] 
     \label{thm:ParserLexerEquivCFGSentences}
     \uses{def:Parser,def:CFGSentences,thm:ParserEquivCFG}
-    Let $\pushdown \circ \transducer_{\automata}$ denote the composition between the parser and lexing transducer.
-    An input string $w \in \alphabet^{*}$ is accepted by $\pushdown \circ \transducer_{\automata}$ if and only if it is a sentence in the original CFG (with respect to $\lexer$).
+    Let $\pushdown \circ \transducer_{\automaton}$ denote the composition between the parser and lexing transducer.
+    An input string $w \in \alphabet^{*}$ is accepted by $\pushdown \circ \transducer_{\automaton}$ if and only if it is a sentence in the original CFG (with respect to $\lexer$).
 \end{theorem}
 
 \begin{theorem}[Parser Lexer Detokenizer Equivalent to CFG Sentences] 
     \label{thm:ParserLexerDetokenizerEquivCFGSentences}
     \uses{def:Parser,thm:ParserLexerEquivCFGSentences}
-    Let $\pushdown \circ \transducer_{\automata \circ \vocab}$ denote the composition between the parser and lexing transducer and detokenizer.
-    An input string $w \in \vocab^{*}$ is accepted by $\pushdown \circ \transducer_{\automata \circ \vocab}$ if and only if $F(w)$ (the string over $\alphabet^{*}$) is a sentence in the original CFG (with respect to $\lexer$).
+    Let $\pushdown \circ \transducer_{\automaton \circ \vocab}$ denote the composition between the parser and lexing transducer and detokenizer.
+    An input string $w \in \vocab^{*}$ is accepted by $\pushdown \circ \transducer_{\automaton \circ \vocab}$ if and only if $F(w)$ (the string over $\alphabet^{*}$) is a sentence in the original CFG (with respect to $\lexer$).
 \end{theorem}
 
 \begin{definition}[PDA Pruned]
@@ -39,6 +39,6 @@ Results related to construction of the PDA
 
 \begin{lemma}[PDA Stack Invariance]
     \label{lem:PDAStackInvariance}
-    If a PDA $\parser$ accepts an input sequence $w$ in state $q$ with stack configuration $\gamma$, then $w$ is also accepted in the same state $q$ when the stack configuration is $\gamma' \cdot \gamma$ for some $\gamma'$ (i.e., when $\gamma$ appears at the top of the stack with additional symbols beneath it).
+    If a PDA $\pushdown$ accepts an input sequence $w$ in state $q$ with stack configuration $\gamma$, then $w$ is also accepted in the same state $q$ when the stack configuration is $\gamma' \cdot \gamma$ for some $\gamma'$ (i.e., when $\gamma$ appears at the top of the stack with additional symbols beneath it).
 \end{lemma}
 

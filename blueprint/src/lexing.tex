@@ -41,7 +41,7 @@ Results related to the lexing and detokenizing.
     \end{itemize}
 \end{definition}
 
-\begin{theorem}[\lexer returns iff input is Language of Lexer Specification]
+\begin{theorem}[Lex returns iff input is Language of Lexer Specification]
     \label{thm:LexSplit}
     \uses{def:PartialLexer,def:LexerASpecification}
     Let $\lang(A_i)$ be the languages of each input automata.
@@ -52,42 +52,42 @@ We can possibly make the second direction stronger and mention how the partition
 \begin{definition}[DetokenizingFST]
     \label{def:DetokenizingFST}
     \uses{def:FST}
-    $
-    \begin{array}{l}
-        \textbf{Input:} \text{Vocabulary } \mathcal{V} \subseteq \Sigma^+ \\
-        \textbf{Output:} \text{FST } \mathcal{T}_\mathcal{V} = (\mathcal{V}, \Sigma, Q, q_0, \delta, F) \\
-        Q := \{q_\epsilon\},\quad F := \{q_\epsilon\},\quad q_0 := q_\epsilon,\quad \delta := \emptyset \\
-        \text{for } c_1 \ldots c_k \in \mathcal{V} \text{ do} \\
-        \quad q_{\text{prev}} := q_\epsilon \\
-        \quad \text{for } i = 1 \text{ to } k-1 \text{ do} \\
-        \quad\quad Q := Q \cup \{q_{c_1 \ldots c_i}\} \\
-        \quad\quad \delta := \delta \cup \{ q_{\text{prev}} \xrightarrow{c_i:\epsilon} q_{c_1 \ldots c_i} \} \\
-        \quad\quad q_{\text{prev}} := q_{c_1 \ldots c_i} \\
-        \quad \delta := \delta \cup \{ q_{\text{prev}} \xrightarrow{c_k:c_1\ldots c_k} q_\epsilon \} \\
-        \textbf{return } \mathcal{T}_\mathcal{V} = (\mathcal{V}, \Sigma, Q, q_0, \delta, F)
-    \end{array}
-    $
+    \[
+        \begin{array}{l}
+            \textbf{Input:} \text{Vocabulary } \mathcal{V} \subseteq \Sigma^+ \\
+            \textbf{Output:} \text{FST } \mathcal{T}_{\mathcal{V}} = (\mathcal{V}, \Sigma, Q, q_0, \delta, F) \\
+            Q := \{q_\epsilon\},\quad F := \{q_\epsilon\},\quad q_0 := q_\epsilon,\quad \delta := \emptyset \\
+            \text{for } c_1 \ldots c_k \in \mathcal{V} \text{ do} \\
+            \quad q_{\text{prev}} := q_\epsilon \\
+            \quad \text{for } i = 1 \text{ to } k-1 \text{ do} \\
+            \quad\quad Q := Q \cup \{q_{c_1 \ldots c_i}\} \\
+            \quad\quad \delta := \delta \cup \{ q_{\text{prev}} \xrightarrow{c_i:\epsilon} q_{c_1 \ldots c_i} \} \\
+            \quad\quad q_{\text{prev}} := q_{c_1 \ldots c_i} \\
+            \quad \delta := \delta \cup \{ q_{\text{prev}} \xrightarrow{c_k:c_1\ldots c_k} q_\epsilon \} \\
+            \textbf{return } \mathcal{T}_{\mathcal{V}} = (\mathcal{V}, \Sigma, Q, q_0, \delta, F)
+        \end{array}
+    \]
 \end{definition}
 
 \begin{definition}[Lexing Transducer]
     \label{def:LexingTransducer}
     \uses{def:FSA, def:FST}
-    $
-    \begin{array}{l}
-        \textbf{Input:} \text{FSA } \mathcal{A} = (\Sigma, Q, q_0, \delta, F), \text{ Output alphabet } \Gamma \\
-        \textbf{Output:} \text{FST } \mathcal{T}_A = (\Sigma, \Gamma, Q, q_0, \delta_{\text{FST}}, F_{\text{FST}}) \\
-        \delta_{\text{FST}} := \{ q \xrightarrow{c:\epsilon} q' \mid q \xrightarrow{c} q' \in \delta \} \\
-        F_{\text{FST}} := \{q_0\} \\
-        \text{for state } q \text{ that recognizes language token } T \in \Gamma \text{ do} \\
-        \quad \text{for } (c, q') \text{ s.t. } \exists q''. q \xrightarrow{c} q'' \notin \delta \text{ and } q_0 \xrightarrow{c} q' \in \delta \text{ do} \\
-        \quad\quad \delta_{\text{FST}} := \delta_{\text{FST}} \cup \{ q \xrightarrow{c:T} q' \} \\
-        \quad \delta_{\text{FST}} := \delta_{\text{FST}} \cup \{ q \xrightarrow{\text{EOS}:T\Phi} q_0 \} \\
-        \textbf{return } \mathcal{T}_A = (\Sigma, \Gamma, Q, q_0, \delta_{\text{FST}}, F_{\text{FST}})
-    \end{array}
-    $
+    \[
+        \begin{array}{l}
+            \textbf{Input:} \text{FSA } \mathcal{A} = (\Sigma, Q, q_0, \delta, F), \text{ Output alphabet } \Gamma \\
+            \textbf{Output:} \text{FST } \mathcal{T}_A = (\Sigma, \Gamma, Q, q_0, \delta_{\text{FST}}, F_{\text{FST}}) \\
+            \delta_{\text{FST}} := \{ q \xrightarrow{c:\epsilon} q' \mid q \xrightarrow{c} q' \in \delta \} \\
+            F_{\text{FST}} := \{q_0\} \\
+            \text{for state } q \text{ that recognizes language token } T \in \Gamma \text{ do} \\
+            \quad \text{for } (c, q') \text{ s.t. } \exists q''. q \xrightarrow{c} q'' \notin \delta \text{ and } q_0 \xrightarrow{c} q' \in \delta \text{ do} \\
+            \quad\quad \delta_{\text{FST}} := \delta_{\text{FST}} \cup \{ q \xrightarrow{c:T} q' \} \\
+            \quad \delta_{\text{FST}} := \delta_{\text{FST}} \cup \{ q \xrightarrow{\text{EOS}:T\Phi} q_0 \} \\
+            \textbf{return } \mathcal{T}_A = (\Sigma, \Gamma, Q, q_0, \delta_{\text{FST}}, F_{\text{FST}})
+        \end{array}
+    \]
 \end{definition}
 
-\begin{theorem}[Lexing Transducer Equivalent to \lexer]
+\begin{theorem}[Lexing Transducer Equivalent to Lex]
     \label{thm:LexingTransducerLexEquiv}
     \uses{def:PartialLexer, def:LexingTransducer}
     \begin{enumerate}
@@ -111,13 +111,13 @@ We can possibly make the second direction stronger and mention how the partition
     if and only if $\lexer(w) = (T_1 \ldots T_k, w_r)$ for some $w_r \in \alphabet^\ast$ and $q' \in Q$ such that $q_0 \xrightarrow{w_r:\epsilon}^\ast q'$.
 \end{theorem}
 
-\begin{theorem}[Composite Transducer Equivalent to \lexer]
+\begin{theorem}[Composite Transducer Equivalent to Lex]
     \label{thm:CompositeLexTransducerLexEquiv}
     \uses{thm:LexingTransducerLexEquiv,def:DetokenizingFST}
-    Let $\transducer_{\automata \circ \vocab}$ denote the (determinized) composition of the lexer and transducer. Let $F : \vocab^{*} \to \alphabet^{*}$ denote the map that transforms strings over $\vocab$ to strings over $\alphabet$. Let $v \in \vocab^{*}$.
+    Let $\transducer_{\automaton \circ \vocab}$ denote the (determinized) composition of the lexer and transducer. Let $F : \vocab^{*} \to \alphabet^{*}$ denote the map that transforms strings over $\vocab$ to strings over $\alphabet$. Let $v \in \vocab^{*}$.
 
     \begin{enumerate}
-        \item If $\lexer(F(v))$ fails to return, then $\transducer_{\automata \circ \vocab}$ does not accept $v$
+        \item If $\lexer(F(v))$ fails to return, then $\transducer_{\automaton \circ \vocab}$ does not accept $v$
         \item If $\lexer(F(v)) = (T_1, \ldots T_k, \epsilon)$, then the transducer produces $T_1 \ldots T_k$ upon reading $v$.
     \end{enumerate}
 \end{theorem}

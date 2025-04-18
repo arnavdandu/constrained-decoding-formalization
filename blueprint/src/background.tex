@@ -23,6 +23,7 @@ We introduce some well known concepts and proofs.
 \begin{definition}[Lexer]
     \label{def:Lexer}
     A lexer is a function from $\alphabet^{*}$ to $\terms^{*} \times \alphabet^{*}$, denoting the lexed and unlexed portions of the string
+\end{definition}
 
 \begin{definition}[CFG Sentences]
     \label{def:CFGSentences}
@@ -51,4 +52,5 @@ We introduce some well known concepts and proofs.
     \end{itemize}
 
     Each transition $(q, c, \alpha, q', \beta)$ specifies that, in state $q$, upon reading the input symbol $c$ and matching the top stack symbols to $\alpha$, the PDA transitions to state $q'$ and replaces $\alpha$ with the sequence $\beta$ on the stack.
+
 \end{definition}

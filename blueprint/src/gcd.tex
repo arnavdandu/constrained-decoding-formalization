@@ -3,45 +3,54 @@
 
 \begin{definition}[Find Always Accepted Tokens]
     \label{def:FindAlwaysAccepted}
-    For any state $q$, we may find the always accepted tokens by 
+    Algorithm that finds the always accepted tokens
 \end{definition}
 
+
 \begin{lemma}[Find Always Accepted Tokens Correct]
-    \uses{def:FindAlwaysAccepted} 
-    A PDA always accepts the tokens found by 
+    \label{lem:FindAlwaysAcceptedCorrect}
+    \uses{def:FindAlwaysAccepted}
+    The algorithm for finding the always accepted tokens is exactly the set of always accepted tokens.
 \end{lemma}
 \begin{proof}
     \uses{lem:PDAStackInvariance} 
 \end{proof}
 
-
 \begin{definition}[Find Context Dependent Terminal Sequences]
     \label{def:FindContextDependentTerminalSequences}
+    Algorithm that finds the context dependent terminal sequences 
 \end{definition}
 
+\begin{lemma}[Find Context Dependent Correct]
+    \label{lem:FindContextDependentCorrect}
+    \uses{def:FindContextDependentTerminalSequences}
+    The algorithm for finding the context dependent terminal sequences is exactly the set of context dependent terminal sequences (in particular, all terminal sequences that may possibly be accepted are included in this set).
+\end{lemma}
 
-\begin{algorithm}[ComputedValidTokenMask]
-    \caption{ComputeValidTokenMask}
+\begin{definition}[ComputeValidTokenMask]
     \label{alg:ComputeTokenMask}
-    \begin{algorithmic}[1]
-        \Require PDA $\mathcal{P}$, FSA $\mathcal{A}$, Inverse token spanner table $T_{\text{inv}}$
-        \Require Always-accepted token table $A$,
-        \Require Context-dependent sequence table $D$,
-        \Require Lexer state $q^{\mathcal{A}}$, Parser state $q^{\mathcal{P}}$, Stack configuration $\gamma$
-        \Ensure Set of allowed tokens $\mathcal{V}_{\text{allowed}}$
-        \State $\mathcal{V}_{\text{allowed}} := A(q^{\mathcal{A}}, q^{\mathcal{P}})$
-        \For{$\alpha \in D(q^{\mathcal{A}}, q^{\mathcal{P}})$}
-        \If{$\alpha$ is accepted by $\mathcal{P}$ in state $q^{\mathcal{P}}$ with stack $\gamma$}
-        \State $\mathcal{V}_{\text{allowed}} := \mathcal{V}_{\text{allowed}} \cup T_{\text{inv}}(q^{\mathcal{A}}, \alpha)$
-        \EndIf
-        \EndFor
-        \State \Return $\mathcal{V}_{\text{allowed}}$
-    \end{algorithmic}
-\end{algorithm}
+    \[
+        \begin{array}{l}
+            \textbf{Input:} \text{PDA } \mathcal{P}, \text{ FSA } \mathcal{A}, \text{ Inverse token spanner table } T_{\text{inv}} \\
+            \textbf{Input:} \text{Always-accepted token table } A, \\
+            \textbf{Input:} \text{Context-dependent sequence table } D, \\
+            \textbf{Input:} \text{Lexer state } q^{\mathcal{A}}, \text{ Parser state } q^{\mathcal{P}}, \text{ Stack configuration } \gamma \\
+            \textbf{Output:} \text{Set of allowed tokens } \mathcal{V}_{\text{allowed}} \\
+            \\
+            1: \mathcal{V}_{\text{allowed}} := A(q^{\mathcal{A}}, q^{\mathcal{P}}) \\
+            2: \text{for each } \alpha \in D(q^{\mathcal{A}}, q^{\mathcal{P}}) \text{ do} \\
+            3: \quad \text{if } \alpha \text{ is accepted by } \mathcal{P} \text{ in state } q^{\mathcal{P}} \text{ with stack } \gamma \text{ then} \\
+            4: \quad\quad \mathcal{V}_{\text{allowed}} := \mathcal{V}_{\text{allowed}} \cup T_{\text{inv}}(q^{\mathcal{A}}, \alpha) \\
+            5: \quad \text{end if} \\
+            6: \text{end for} \\
+            7: \text{return } \mathcal{V}_{\text{allowed}}
+        \end{array}
+    \]
+\end{definition}
 
 \begin{lemma}[ComputeTokenMaskCorrect]
-    \label{lemma:ComputeTokenMaskCorrect}
-    A token is a member of the token mask produced ComputeValidTokenMasks if and only if the composite $\parser \circ \transducer_{\automaton \circ \vocab}$ accepts the token in the current lexer and parser state
+    \label{lem:ComputeTokenMaskCorrect}
+    A token is a member of the token mask produced ComputeValidTokenMasks if and only if the composite $\pushdown \circ \transducer_{\automaton \circ \vocab}$ accepts the token in the current lexer and parser state
 \end{lemma}
 
 \begin{lemma}
@@ -60,13 +69,12 @@
 
 \begin{theorem}[Token Mask Completeness]
     \label{thm:TokenMaskCompleteness}
-    \label{def:PDAPruned}
-    Let $\pushdown = (\terms, \Pi, Q^\pushdown, q_0^\pushdown, Z_0, \delta^\pushdown, F^\pushdown)$ be a pushdown automaton such that $\lang(\pushdown) = \lang(\grammar)$ and $\pushdown$ is pruned.
+    Let $\pushdown = (\terms, \Pi, Q^{\pushdown}, q_0^{\pushdown}, Z_0, \delta^{\pushdown}, F^{\pushdown})$ be a pushdown automaton such that $\lang(\pushdown) = \lang(\grammar)$ and $\pushdown$ is pruned.
     Given a string $w \in \langpre^\lexer(\grammar)$ and a token $v \in \vocab$, the token $v$ is not masked by \autoref{alg:ComputeTokenMask}  (i.e., $v \in \vocab_{\textit{allowed}}$) if the concatenation $wv$ belongs to $\langpre^\lexer(\grammar)$.
 \end{theorem}
 
 \begin{proof}
-    \uses{thm:LexingTransducerMemoryless, thm:IntermediatePrunedPDAPrefixCFG, thm:ComputeTokenMaskCorrect}
+    \uses{lem:completeness-lemma, thm:LexingTransducerMemoryless, thm:IntermediatePrunedPDAPrefixCFG, lem:ComputeTokenMaskCorrect}
     By \autoref{thm:LexingTransducerMemoryless}, the lexing transducer emitted $T_1 \ldots T_k$ and reached a state $q'$ such that $q_0 \xrightarrow{w_r: \epsilon}^\ast q'$.
     If $wv \in \langpre^\lexer(\grammar)$, then $q_0 \xrightarrow{wv: T_1 \ldots T_k T_{k+1} \ldots T_m} q''$ for some state $q''$, which implies $q' \xrightarrow{T_{k+1} \ldots T_m} q''$.
     By Lemma~\ref{lem:completeness-lemma}, there exists $T \in \producible(q'')$ such that $T_1 \ldots T_k T_{k+1} \ldots T_m T \in \langpre(\grammar)$.
@@ -76,18 +84,20 @@
 \begin{lemma}[Token Mask Soundness]
     \label{lem:soundness-lemma}
     Given $w \in \vocab^\ast$ such that $q \xrightarrow{w: T_1 \ldots T_k}^\ast q'$ via the lexing transducer and $T_1 \ldots T_k \in \lang(\grammar) \setminus \langpre(\grammar)$,
-    if there exists $T \in \producible(q')$ such that $T_1 \ldots T_k T \in \langpre(\grammar)$ then $w \in \langpre^\lexer(\grammar)$.
-
-    \kh{And also need assumption that [what do we need assumption of? that $\alphabet \subseteq \vocab \subseteq \Sigma^*$]}
+    if there exists $T \in \producible(q')$ such that $T_1 \ldots T_k T \in \langpre(\grammar)$ then $w \in \langpre^\lexer(\grammar)$. 
 \end{lemma}
+\begin{proof}
+    This uses the assumption the all terminal sequences are realizable.
+\end{proof}
 
 \begin{theorem}[Token Mask Soundness]
     \label{thm:TokenMaskSoundness}
-    Let $\pushdown = (\terms, \Pi, Q^\pushdown, q_0^\pushdown, Z_0, \delta^\pushdown, F^\pushdown)$ be a pushdown automaton such that $\lang(\pushdown) = \lang(\grammar)$.
+    Let $\pushdown = (\terms, \Pi, Q^{\pushdown}, q_0^{\pushdown}, Z_0, \delta^{\pushdown}, F^{\pushdown})$ be a pushdown automaton such that $\lang(\pushdown) = \lang(\grammar)$.
     Given a string $w \in \langpre^\lexer(\grammar)$ and a token $v \in \vocab$, the token $v$ is not masked by \autoref{alg:ComputeTokenMask}  (i.e., $v \in \vocab_{\textit{allowed}}$) only if the concatenation $wv$ belongs to $\langpre^\lexer(\grammar)$.
 \end{theorem}
+
 \begin{proof}
-    \uses{thm:ComputeTokenMaskCorrect}
+    \uses{lem:ComputeTokenMaskCorrect, lem:soundness-lemma}
 \end{proof}
 
 \begin{definition}[GCDChecker]
@@ -141,7 +151,7 @@
 Here are the final theorems that we want to ultimately prove. \ref{thm:LexSplit} may also be included as a final theorem.
 \begin{theorem}[GCDChecker Complete]
     \label{thm:GCDCheckerComplete}
-    \uses{def:CheckerSound,def:CFGLang,thm:GrammarSubsetCheckerLang,thm:CheckerLangSubsetGrammar, thm:PrefixSubsetIntermediate, thm:IntermediateSubsetPrefix}
+    \uses{def:CheckerSound,def:CFGSentences,thm:GrammarSubsetCheckerLang,thm:CheckerLangSubsetGrammar, thm:PrefixSubsetIntermediate, thm:IntermediateSubsetPrefix}
     The GCD Checker is complete with respect to the language (sentences) of the CFG.
 \end{theorem}
 \begin{proof}
