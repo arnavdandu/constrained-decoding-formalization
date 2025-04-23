@@ -16,8 +16,8 @@ universe u v w
 
 section Symbols
 variable
-  [BEq α] [BEq σ]
   {α : Type u} {β : Type u} {σ : Type v}
+  [BEq α] [BEq σ]
   (EOS : List α)
 
 structure FSA (α σ) where
