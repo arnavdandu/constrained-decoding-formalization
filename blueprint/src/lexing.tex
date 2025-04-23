@@ -20,6 +20,7 @@ Results related to the lexing and detokenizing.
 
 \begin{definition}[Lexer Automata Specification]
 	\label{def:LexerASpecification}
+	\leanok
     \uses{def:FSA, def:LexerRESpecification, def:BuildFSA}
     From a lexer regular expression specification, if one applies the Build FSA procedure to each regular expression, we get a finite set of pairs, each consisting of an automaton $\automaton^i = (Q^i, \alphabet^i, q_{0}^{i}, \delta^i, F^i)$ and a terminal symbol $T^i \in \terms$.
 
@@ -29,6 +30,7 @@ Results related to the lexing and detokenizing.
 \begin{definition}[Partial Lexer]
     \label{def:PartialLexer}
     \uses{def:LexerASpecification, def:Lexer}
+    \leanok
     \begin{itemize}
     \item $\lexer(\epsilon) = (\epsilon, \epsilon)$
     \item Given $\lexer(w) = (T_1 \ldots T_k, w_r)$, the value of $\lexer(wc)$ is

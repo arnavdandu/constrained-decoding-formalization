@@ -3,11 +3,13 @@ General propositions about constrained decoding
 
 \begin{definition}[Vocabulary]
     \label{def:Vocabulary}
+    \leanok
     $\vocab$ is said to be a vocabularly over a base alphabet $\alphabet$ if $\alphabet \subseteq \vocab \subseteq\alphabet^{*}$.
 \end{definition}
 
 \begin{definition}[Extended Vocabulary]
     \label{def:XVocabulary}
+    \leanok
     \uses{def:Vocabulary}
     The extended vocabularly $\xvocab$ is the vocabularly $\vocab$ adjoined with the end of string token, i.e. $\vocab \ \cup \ \{\$\}$
 \end{definition}
@@ -15,6 +17,7 @@ General propositions about constrained decoding
 \begin{definition}[Language Model]
     \label{def:LanguageModel}
     \uses{def:XVocabulary}
+    \leanok
     
     A \emph{language model} is given by some function $L: \alphabet^{*} \to \xvocab$.
 \end{definition}
@@ -22,6 +25,7 @@ General propositions about constrained decoding
 \begin{definition}[Checker]
     \label{def:Checker}
     \uses{def:XVocabulary}
+    \leanok
     A \emph{checker} is a function $C: \alphabet^* \to \mathbb{P}(\xvocab)$ which specifies the set of tokens that may be produced given the currently produced string
 \end{definition}
 
@@ -49,6 +53,7 @@ General propositions about constrained decoding
 \begin{definition}[Checker Intermediate Language]
     \label{def:CheckerIntermediateLanguage}
     \uses{def:Checker,def:Vocabulary}
+    \leanok
     The checker intermediate language for some checker $C$ is defined recursively:
     \begin{itemize}
         \item $\epsilon \in \langint$
@@ -70,6 +75,7 @@ We might not need this theorem as it may be awkward to define intermediate value
 
 \begin{definition}[Checker Language]
     \label{def:CheckerLanguage}
+    \leanok
     \uses{def:CheckerIntermediateLanguage,def:Checker}
      Let $C$ be a checker. $w$ is a member of the Checker Language $\lang$ if and only if $w \in \langint$ and $\$ \in C(w)$. 
 \end{definition}
@@ -88,6 +94,7 @@ NB: unless a checker is \emph{sound}, do note that strings in the checker interm
 \begin{definition}[Checker Sound]
     \label{def:CheckerSound}
     \uses{def:Checker,def:Vocabulary}
+    \leanok
     A checker is \emph{sound} if it is well-behaved, adhering to the two following rules:
 
     \begin{enumerate}
