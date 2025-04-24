@@ -134,7 +134,7 @@ def BuildLexingFST (fsa : FSA α σ) (oalph : List α) (h : fsa.start.length = 1
           let next := fsa.step q c
           for q' in next do
             if Q.find? (fun q'' => not (elem q'' next) && elem q' (fsa.step q0 c)) ≠ none then
-              trans' := trans'.insert (q, c, ([q], [T]))
+              trans' := trans'.insert (q, c, ([q'], [T]))
         trans' := trans'.insert (q, EOS, ([q0], [T, EOS]))
 
   ⟨alph, oalph, Q, F', FST.mkStep trans', F'⟩
