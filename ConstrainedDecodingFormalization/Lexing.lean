@@ -10,6 +10,8 @@ open Classical List
 
 universe u v
 
+#check List.flatten
+
 variable
   {α : Type u} {Γ : Type u} {σ : Type v}
   [DecidableEq α] [DecidableEq σ] [DecidableEq Γ]
@@ -24,10 +26,12 @@ structure FSA (α σ) where
   step : σ → α → List σ
   accept : List σ
 
-def FSA.transitions (fsa : FSA α σ) : List (σ × α × List σ) :=
-  fsa.states.flatMap (fun q =>
-    (fsa.alph.map (fun c =>
-        (q, c, fsa.step q c)
+variable (A : FSA α σ)
+
+def FSA.transitions : List (σ × α × List σ) :=
+  A.states.flatMap (fun q =>
+    (A.alph.map (fun c =>
+        (q, c, A.step q c)
       )
     )
   )
@@ -39,6 +43,14 @@ def FSA.mkStep (transitions : List (σ × α × List σ)) : σ → α → List �
     )
     |> List.flatten
 
+def FSA.stepList (S : List σ) (a : α) : List σ :=
+  (S.flatMap (fun s => A.step s a)).eraseDups
+
+def FSA.evalFrom (start : σ) : List α → List σ :=
+  List.foldl A.stepList [start]
+
+def FSA.eval : List α → List σ :=
+  A.evalFrom A.start
 
 structure FST (α Γ σ) where
   alph : List α
@@ -80,10 +92,9 @@ noncomputable def isToken (specs : List (LexerSpec α Γ σ)) (xs : List α) : O
     let nfa : NFA α σ := s.automaton
     if nfa.eval xs ⊆ nfa.accept then some s.term_sym else none
 
-noncomputable def isToken_comp (specs : List (LexerSpec α Γ σ)) (xs : List α) : Option Γ :=
+def isToken_comp (specs : List (LexerSpec α Γ σ)) (xs : List α) : Option Γ :=
   specs.findSome? fun s =>
-    let dfa : DFA α (Set σ) := s.automaton
-    if dfa.eval xs ∈ dfa.accept then some s.term_sym else none
+    if ∃ q, q ∈ s.automaton.eval xs ∧ q ∈ s.automaton.accept then some s.term_sym else none
 
 -- A predicate for prefix of any token
 def isPrefix (specs : List (LexerSpec α Γ σ)) (xs : List α) : Prop :=
