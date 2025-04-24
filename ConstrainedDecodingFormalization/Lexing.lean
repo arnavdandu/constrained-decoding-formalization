@@ -129,7 +129,7 @@ def BuildLexingFST (fsa : FSA α σ) (oalph : List α) (h : fsa.start.length = 1
   let mut trans' : List (σ × α × (List σ × List α)) := trans.map (fun (q, c, q') => (q, c, (q', [])))
   for q in Q do
     for T in oalph do
-      if (fsa.step q T).length > 0 then -- if q recognizes T ∈ Γ
+      if not (fsa.step q T).isEmpty then 
         for c in alph do
           let next := fsa.step q c
           for q' in next do
