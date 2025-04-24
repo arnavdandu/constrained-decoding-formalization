@@ -8,7 +8,7 @@ import Mathlib.Data.Finset.Basic
 import Std.Data.HashSet
 --import Mathlib.Data.Set.Finite
 
-open Classical
+open Classical List
 
 universe u v w
 
@@ -67,8 +67,6 @@ def FST.mkStep (transitions : List (σ × α × (List σ × Γ))) : σ → α �
     |>.map (fun (_, _, ts) => ts)
     |>.getD ([], default)
 
-open Std
-
 instance [DecidableEq σ] : Coe (FSA α σ) (NFA α σ) := ⟨fun fsa => {
   start := (FSA.start fsa).toFinset
   step := fun q a => (FSA.step fsa q a).toFinset
@@ -78,7 +76,6 @@ instance [DecidableEq σ] : Coe (FSA α σ) (NFA α σ) := ⟨fun fsa => {
 structure LexerSpecA (α Γ σ) where
   automaton : FSA α σ
   term_sym : Γ
-
 
 -- A recognizer for a token: returns true if the input is a valid token
 noncomputable def isToken (specs : List (LexerSpecA α Γ σ)) (xs : List α) : Option Γ :=
@@ -132,15 +129,12 @@ def BuildLexingFST (fsa : FSA α σ) (oalph : List α) (h : fsa.start.length = 1
   let mut trans' : List (σ × α × (List σ × List α)) := trans.map (fun (q, c, q') => (q, c, (q', [])))
   for q in Q do
     for T in oalph do
-      if (fsa.step q T).length > 0 then -- if q recognizes T ∈ Γ
+      if not (fsa.step q T).isEmpty then
         for c in alph do
-          let next := fsa.step q c
-          for q' in next do
-            for q'' in Q do
-              if not (List.elem q'' next) && List.elem q' (fsa.step q0 c) then
-                trans' := trans' ++ [(q, c, ([q], [T]))]
-        trans' := trans' ++ [(q, EOS, ([q0], [T, EOS]))]
-
+          for q' in Q do
+            if ∃ q'' ∈ Q, q'' ∉ fsa.step q c ∧ q' ∈ (fsa.step q0 c) then
+              trans' := trans'.insert (q, c, ([q'], [T]))
+        trans' := trans'.insert (q, EOS, ([q0], [T, EOS]))
   ⟨alph, oalph, Q, F', FST.mkStep trans', F'⟩
 
 
