@@ -5,18 +5,12 @@ import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.List.Basic
 import Mathlib.Data.Finset.Basic
-import Std.Data.HashSet
---import Mathlib.Data.Set.Finite
 
 open Classical List
 
---universe u v w
+universe u v
 
-#check Language
-
-section Symbols
 variable
-  [BEq α] [BEq σ] [BEq Γ]
   {α : Type u} {Γ : Type u} {σ : Type v}
   [DecidableEq α] [DecidableEq σ] [DecidableEq Γ]
   [Inhabited α] [Inhabited Γ]
@@ -137,6 +131,3 @@ def BuildLexingFST (fsa : FSA α σ) (oalph : List α) (h : fsa.start.length = 1
         trans' := trans'.insert (q, EOS, ([q0], [T, EOS]))
 
   ⟨alph, oalph, Q, F', FST.mkStep trans', F'⟩
-
-
-end Symbols
