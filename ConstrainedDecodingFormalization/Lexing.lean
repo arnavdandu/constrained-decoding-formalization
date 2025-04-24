@@ -16,7 +16,7 @@ universe u v w
 
 section Symbols
 variable
-  {α : Type u} {β : Type u} {σ : Type v}
+  {α : Type u} {Γ : Type u} {σ : Type v}
   [BEq α] [BEq σ]
   (EOS : List α)
 
@@ -27,12 +27,12 @@ structure FSA (α σ) where
   step : σ → α → List σ
   accept : List σ
 
-structure FST (α β σ) where
+structure FST (α Γ σ) where
   alph : α
-  oalph : β
+  oalph : Γ
   states : List σ
   start : List σ
-  step : σ → α → (List σ × β)
+  step : σ → α → (List σ × Γ)
   accept : List σ
 
 
@@ -44,25 +44,25 @@ instance [DecidableEq σ] : Coe (FSA α σ) (NFA α σ) := ⟨λ fsa => {
   accept := (FSA.accept fsa).toFinset
 }⟩
 
-structure LexerSpec (α β σ) where
+structure LexerSpecA (α β σ) where
   automaton : FSA α σ
   term_sym : β
 
 
 -- A recognizer for a token: returns true if the input is a valid token
-noncomputable def isToken (specs : List (LexerSpec α β σ)) (xs : List α) : Option β :=
+noncomputable def isToken (specs : List (LexerSpecA α Γ σ)) (xs : List α) : Option Γ :=
   specs.findSome? fun s =>
     let nfa : NFA α σ := s.automaton
     if NFA.accepts nfa xs then s.term_sym else none
 
 -- A predicate for prefix of any token
-noncomputable def isPrefix (specs : List (LexerSpec α β σ)) (xs : List α) : Prop :=
+noncomputable def isPrefix (specs : List (LexerSpecA α Γ σ)) (xs : List α) : Prop :=
   specs.any fun s =>
     let nfa : NFA α σ := s.automaton
     ∃ ys, NFA.accepts nfa (xs ++ ys)
 
-inductive LexRel (specs : List (LexerSpec α β σ)) :
-    List α → List β → List α → Prop
+inductive LexRel (specs : List (LexerSpecA α Γ σ)) :
+    List α → List Γ → List α → Prop
   | empty :
       LexRel specs [] [] []
 
@@ -85,8 +85,8 @@ inductive LexRel (specs : List (LexerSpec α β σ)) :
       LexRel specs cs T (wr ++ [c]) →
       LexRel specs (c :: cs) T wr
 
-noncomputable def PartialLex (specs : List (LexerSpec α β σ)) (w : List α) : Option (List β × List α) :=
-  if h : ∃ out : List β × List α, LexRel specs w out.1 out.2 then
+noncomputable def PartialLex (specs : List (LexerSpecA α Γ σ)) (w : List α) : Option (List Γ × List α) :=
+  if h : ∃ out : List Γ × List α, LexRel specs w out.1 out.2 then
     some (choose h)
   else none
 
