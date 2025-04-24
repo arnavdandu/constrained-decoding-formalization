@@ -129,14 +129,12 @@ def BuildLexingFST (fsa : FSA α σ) (oalph : List α) (h : fsa.start.length = 1
   let mut trans' : List (σ × α × (List σ × List α)) := trans.map (fun (q, c, q') => (q, c, (q', [])))
   for q in Q do
     for T in oalph do
-      if not (fsa.step q T).isEmpty then 
+      if not (fsa.step q T).isEmpty then
         for c in alph do
-          let next := fsa.step q c
-          for q' in next do
-            if ∃ q'' ∈ Q, not (q'' ∈ next) && q' ∈ (fsa.step q0 c) then
+          for q' in Q do
+            if ∃ q'' ∈ Q, q'' ∉ fsa.step q c ∧ q' ∈ (fsa.step q0 c) then
               trans' := trans'.insert (q, c, ([q'], [T]))
         trans' := trans'.insert (q, EOS, ([q0], [T, EOS]))
-
   ⟨alph, oalph, Q, F', FST.mkStep trans', F'⟩
 
 
