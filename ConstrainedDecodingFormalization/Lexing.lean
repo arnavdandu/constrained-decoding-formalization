@@ -14,12 +14,13 @@ variable
   {α : Type u} {Γ : Type u} {σ : Type v}
   [DecidableEq α] [DecidableEq σ] [DecidableEq Γ]
   [Inhabited α] [Inhabited Γ]
+  [Fintype α] [Fintype Γ]
   (EOS : α)
 
 structure FSA (α σ) where
   alph : List α
   states : List σ
-  start : List σ
+  start : σ
   step : σ → α → List σ
   accept : List σ
 
@@ -43,7 +44,7 @@ structure FST (α Γ σ) where
   alph : List α
   oalph : List Γ
   states : List σ
-  start : List σ
+  start : σ
   step : σ → α → (List σ × List Γ)
   accept : List σ
 
@@ -61,11 +62,13 @@ def FST.mkStep (transitions : List (σ × α × (List σ × Γ))) : σ → α �
     |>.map (fun (_, _, ts) => ts)
     |>.getD ([], default)
 
-instance [DecidableEq σ] : Coe (FSA α σ) (NFA α σ) := ⟨fun fsa => {
-  start := (FSA.start fsa).toFinset
+instance : Coe (FSA α σ) (NFA α σ) := ⟨fun fsa => {
+  start := {fsa.start}
   step := fun q a => (FSA.step fsa q a).toFinset
   accept := (FSA.accept fsa).toFinset
 }⟩
+
+instance : Coe (FSA α σ) (DFA α (Set σ)) := ⟨fun fsa => (fsa : NFA α σ).toDFA⟩
 
 structure LexerSpec (α Γ σ) where
   automaton : FSA α σ
@@ -75,7 +78,12 @@ structure LexerSpec (α Γ σ) where
 noncomputable def isToken (specs : List (LexerSpec α Γ σ)) (xs : List α) : Option Γ :=
   specs.findSome? fun s =>
     let nfa : NFA α σ := s.automaton
-    if (NFA.accepts nfa) xs then s.term_sym else none
+    if nfa.eval xs ⊆ nfa.accept then some s.term_sym else none
+
+noncomputable def isToken_comp (specs : List (LexerSpec α Γ σ)) (xs : List α) : Option Γ :=
+  specs.findSome? fun s =>
+    let dfa : DFA α (Set σ) := s.automaton
+    if dfa.eval xs ∈ dfa.accept then some s.term_sym else none
 
 -- A predicate for prefix of any token
 def isPrefix (specs : List (LexerSpec α Γ σ)) (xs : List α) : Prop :=
@@ -112,11 +120,11 @@ noncomputable def PartialLex (specs : List (LexerSpec α Γ σ)) (w : List α) :
     some (choose h)
   else none
 
-def BuildLexingFST (fsa : FSA α σ) (oalph : List α) (h : fsa.start.length = 1) : FST α α σ := Id.run do
+def BuildLexingFST (fsa : FSA α σ) (oalph : List α) : FST α α σ := Id.run do
   let Q := fsa.states
   let trans := fsa.transitions
   let alph := fsa.alph
-  let q0 := fsa.start[0]
+  let q0 := fsa.start
 
   let F' := [q0]
 
@@ -130,4 +138,4 @@ def BuildLexingFST (fsa : FSA α σ) (oalph : List α) (h : fsa.start.length = 1
               trans' := trans'.insert (q, c, ([q'], [T]))
         trans' := trans'.insert (q, EOS, ([q0], [T, EOS]))
 
-  ⟨alph, oalph, Q, F', FST.mkStep trans', F'⟩
+  ⟨alph, oalph, Q, q0, FST.mkStep trans', F'⟩
