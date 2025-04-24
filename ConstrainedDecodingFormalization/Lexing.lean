@@ -113,10 +113,14 @@ import Mathlib.Computability.NFA
        LexRel specs cs T (wr ++ [c]) →
        LexRel specs (c :: cs) T wr
 
+ def lexer := List α -> Option (List Γ × List α)
+
  noncomputable def PartialLex (specs : List (LexerSpec α Γ σ)) (w : List α) : Option (List Γ × List α) :=
    if h : ∃ out : List Γ × List α, LexRel specs w out.1 out.2 then
      some (choose h)
    else none
+
+ #check ((PartialLex _) : lexer)
 
  def BuildLexingFST (fsa : FSA α σ) (oalph : List α) (h : fsa.start.length = 1) : FST α α σ := Id.run do
    let Q := fsa.states
