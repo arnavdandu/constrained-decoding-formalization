@@ -1,1 +1,1 @@
-alias Constraint := 0
+def x := 0
