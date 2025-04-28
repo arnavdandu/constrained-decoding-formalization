@@ -7,7 +7,7 @@ universe u v w
 
 variable
   {α : Type u} {Γ : Type v} {σ : Type w}
-  [DecidableEq α] [DecidableEq σ] 
+  [DecidableEq α] [DecidableEq σ]
   [Inhabited α] [Inhabited Γ]
   [Fintype α] [Fintype Γ]
 
@@ -17,6 +17,8 @@ structure FSA (α σ) where
   start : σ
   step : σ → α → List σ
   accept : List σ
+
+variable (A : FSA α σ)
 
 def FSA.transitions (fsa : FSA α σ) : List (σ × α × List σ) :=
   fsa.states.flatMap (fun q =>
@@ -33,6 +35,14 @@ def FSA.mkStep (transitions : List (σ × α × List σ)) : σ → α → List �
     )
     |> List.flatten
 
+def FSA.stepList (S : List σ) (a : α) : List σ :=
+  (S.flatMap (fun s => A.step s a)).eraseDups
+
+def FSA.evalFrom (start : σ) : List α → List σ :=
+  List.foldl A.stepList [start]
+
+def FSA.eval : List α → List σ :=
+  A.evalFrom A.start
 
 structure FST (α Γ σ) where
   alph : List α

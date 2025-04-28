@@ -19,7 +19,6 @@ variable
   [Fintype α] [Fintype Γ]
   (EOS : α)
 
-
 structure LexerSpec (α Γ σ) where
   automaton : FSA α σ
   term_sym : Γ
@@ -73,7 +72,6 @@ noncomputable def PartialLex (specs : List (LexerSpec α Γ σ)) (w : List α) :
    else none
 
 #check ((PartialLex _) : Lexer _ _)
-
 
 def BuildLexingFST (fsa : FSA α σ) (oalph : List α) : FST α α σ := Id.run do
   let Q := fsa.states
