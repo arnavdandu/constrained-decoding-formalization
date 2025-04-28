@@ -33,22 +33,14 @@ abbrev LanguageModel := List α → β
 def checkerAllowsTermination ( c : Checker α β ) : Prop :=
       ∀ w, CheckerIntermediateLanguage c w →
         ∃ w', CheckerLanguage c w' ∧ w.isPrefixOf w'
-def checkerAllowsTermination ( c : Checker α β ) : Prop :=
-      ∀ w, CheckerIntermediateLanguageI c w →
-        ∃ w', CheckerLanguageI c w' ∧ w.isPrefixOf w'
 
 def checkerPathIndependent ( c : Checker α β ) : Prop :=
       ∀ w, CheckerIntermediateLanguage c w →
           ∀ w', (∃ v, w = w' ++ t.flatten v) →
             CheckerIntermediateLanguage c w'
-def checkerPathIndependent ( c : Checker α β ) : Prop :=
-      ∀ w, CheckerIntermediateLanguageI c w →
-          ∀ w', (∃ v, w = w' ++ t.flatten v) →
-            CheckerIntermediateLanguageI c w'
 
 def checkerSound (c : Checker α β ) : Prop := checkerAllowsTermination c ∧ checkerPathIndependent c
 
-def checkerComplete (c : Checker α β ) := 0
 --
 -- partial def constrained_decoding ( ) := by sorry
   -- given
