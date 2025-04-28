@@ -20,6 +20,8 @@ structure FSA (α σ) where
 
 variable (A : FSA α σ)
 
+#check List.flatten []
+
 def FSA.transitions (fsa : FSA α σ) : List (σ × α × List σ) :=
   fsa.states.flatMap (fun q =>
     (fsa.alph.map (fun c =>
@@ -30,10 +32,9 @@ def FSA.transitions (fsa : FSA α σ) : List (σ × α × List σ) :=
 
 def FSA.mkStep (transitions : List (σ × α × List σ)) : σ → α → List σ :=
   fun s a =>
-    transitions.filterMap (fun (s', a', ts) =>
-      if s = s' && a = a' then some ts else none
-    )
-    |> List.flatten
+    transitions.find? (fun (s', a', _) => s = s' && a = a')
+    |>.map (fun (_, _, ts) => ts)
+    |>.getD ([])
 
 def FSA.stepList (S : List σ) (a : α) : List σ :=
   (S.flatMap (fun s => A.step s a)).eraseDups
