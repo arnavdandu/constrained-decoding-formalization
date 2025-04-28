@@ -3,10 +3,10 @@ import Mathlib.Computability.DFA
 import Mathlib.Computability.RegularExpressions
 import Mathlib.Data.Finset.Basic
 
-universe u v w
+universe u v w y
 
 variable
-  {α : Type u} {Γ : Type v} {σ : Type w}
+  {α : Type u} {Γ : Type v} {σ : Type w} 
   [DecidableEq α] [DecidableEq σ]
   [Inhabited α] [Inhabited Γ]
   [Fintype α] [Fintype Γ]
@@ -74,3 +74,4 @@ instance : Coe (FSA α σ) (NFA α σ) := ⟨fun fsa => {
 }⟩
 
 instance : Coe (FSA α σ) (DFA α (Set σ)) := ⟨fun fsa => (fsa : NFA α σ).toDFA⟩
+

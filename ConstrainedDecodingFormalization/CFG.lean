@@ -1,3 +1,4 @@
+import ConstrainedDecodingFormalization.Language
 import ConstrainedDecodingFormalization.Lexing
 import Mathlib.Computability.ContextFreeGrammar
 
@@ -12,4 +13,4 @@ def cfgSentences (cfg : ContextFreeGrammar Γ) (l : (Lexer α Γ) ) : Language �
     }
 
 def cfgSentencesPre (cfg : ContextFreeGrammar Γ) (l : (Lexer α Γ) ) : Language α :=
-    { w | ∃ v ∈ cfgSentences cfg l, w <+: v }
+    (cfgSentences cfg l).prefixes

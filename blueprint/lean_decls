@@ -1,5 +1,12 @@
 FST
-lexer
+Lexer
 cfgSentences
 cfgSentencesPre
+PDA
+checkerSound
+checkerComplete
 BuildLexingFST
+PDA.fromCFG
+PDA.fromCFGCorrect
+PDA.pruned
+PDA.fromCFGPruned
