@@ -6,7 +6,7 @@ PDA
 checkerSound
 checkerComplete
 BuildLexingFST
-fromCFG
-fromCFGCorrect
+PDA.fromCFG
+PDA.fromCFGCorrect
 PDA.pruned
 PDA.fromCFGPruned

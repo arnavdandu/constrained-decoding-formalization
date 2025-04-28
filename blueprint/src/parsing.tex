@@ -2,14 +2,14 @@
 Results related to construction of the PDA
 \begin{definition}[Parser]
     \label{def:Parser}
-    \lean{fromCFG}
+    \lean{PDA.fromCFG}
     \uses{def:PDA}
     Given an input context free grammar, build a pushdown automata that recognizes the CFG. Delaying details of the algorithm until Lean formalization time, but I'm sure there's a well known construction.
 \end{definition}
 
 \begin{theorem}[Parser Equivalent to CFG] 
     \label{thm:ParserEquivCFG}
-    \lean{fromCFGCorrect}
+    \lean{PDA.fromCFGCorrect}
     \uses{def:Parser,def:CFG}
     Let $\pushdown$ be the PDA as constructed above. A terminal sequence is accepted by $\pushdown$ if and only if it is a member of the input CFG.
 \end{theorem}
