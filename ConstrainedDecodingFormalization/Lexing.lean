@@ -49,6 +49,7 @@ inductive LexRel (specs : List (LexerSpec (Ch α) (Ch Γ) σ)) :
 
   -- (T₁...Tₖ T^j, ε) if c = EOS and wr ∈ L(A^j)
   | done {wr tj} :
+      --c = Character.eos →
       isToken specs wr = some tj →
       LexRel specs wr [tj] []
 
@@ -68,8 +69,8 @@ inductive LexRel (specs : List (LexerSpec (Ch α) (Ch Γ) σ)) :
 
 def Lexer (α : Type u) (Γ : Type v) := List α -> Option (List Γ × List α)
 
-noncomputable def PartialLex (specs : List (LexerSpec α Γ σ)) (w : List α) : Option (List Γ × List α) :=
-   if h : ∃ out : List Γ × List α, LexRel specs w out.1 out.2 then
+noncomputable def PartialLex (specs : List (LexerSpec (Ch α) (Ch Γ) σ)) (w : List (Ch α)) : Option (List (Ch Γ) × List (Ch α)) :=
+   if h : ∃ out : List (Ch Γ) × List (Ch α), LexRel specs w out.1 out.2 then
      some (choose h)
    else none
 
