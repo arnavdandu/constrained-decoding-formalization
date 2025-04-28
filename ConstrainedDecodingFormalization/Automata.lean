@@ -63,3 +63,9 @@ instance : Coe (FSA α σ) (NFA α σ) := ⟨fun fsa => {
 }⟩
 
 instance : Coe (FSA α σ) (DFA α (Set σ)) := ⟨fun fsa => (fsa : NFA α σ).toDFA⟩
+
+structure PDA (Γ σ) where 
+  alph : List Γ 
+  states : List σ
+  start : σ 
+
