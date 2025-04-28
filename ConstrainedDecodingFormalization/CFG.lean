@@ -1,5 +1,5 @@
 import ConstrainedDecodingFormalization.Lexing
-import Mathlib
+import Mathlib.Computability.ContextFreeGrammar
 
 universe u v
 variable { α : Type u } { Γ : Type v } [ BEq α ]
