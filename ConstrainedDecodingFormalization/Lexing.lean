@@ -6,81 +6,18 @@ import Mathlib.Data.Set.Basic
 import Mathlib.Data.List.Basic
 import Mathlib.Data.Finset.Basic
 
+import ConstrainedDecodingFormalization.Automata
+
 open Classical List
 
-universe u v
-
-#check List.flatten
+universe u v w
 
 variable
-  {α : Type u} {Γ : Type u} {σ : Type v}
+  {α : Type u} {Γ : Type v} {σ : Type w}
   [DecidableEq α] [DecidableEq σ] [DecidableEq Γ]
   [Inhabited α] [Inhabited Γ]
   [Fintype α] [Fintype Γ]
   (EOS : α)
-
-structure FSA (α σ) where
-  alph : List α
-  states : List σ
-  start : σ
-  step : σ → α → List σ
-  accept : List σ
-
-variable (A : FSA α σ)
-
-def FSA.transitions : List (σ × α × List σ) :=
-  A.states.flatMap (fun q =>
-    (A.alph.map (fun c =>
-        (q, c, A.step q c)
-      )
-    )
-  )
-
-def FSA.mkStep (transitions : List (σ × α × List σ)) : σ → α → List σ :=
-  fun s a =>
-    transitions.filterMap (fun (s', a', ts) =>
-      if s = s' && a = a' then some ts else none
-    )
-    |> List.flatten
-
-def FSA.stepList (S : List σ) (a : α) : List σ :=
-  (S.flatMap (fun s => A.step s a)).eraseDups
-
-def FSA.evalFrom (start : σ) : List α → List σ :=
-  List.foldl A.stepList [start]
-
-def FSA.eval : List α → List σ :=
-  A.evalFrom A.start
-
-structure FST (α Γ σ) where
-  alph : List α
-  oalph : List Γ
-  states : List σ
-  start : σ
-  step : σ → α → (List σ × List Γ)
-  accept : List σ
-
-def FST.transitions (fst : FST α Γ σ) : List (σ × α × (List σ × List Γ)) :=
-  fst.states.flatMap (fun q =>
-    (fst.alph.map (fun c =>
-        (q, c, fst.step q c)
-      )
-    )
-  )
-
-def FST.mkStep (transitions : List (σ × α × (List σ × Γ))) : σ → α → (List σ × Γ) :=
-  fun s a =>
-    transitions.find? (fun (s', a', _) => s = s' && a = a')
-    |>.map (fun (_, _, ts) => ts)
-    |>.getD ([], default)
-
-instance : Coe (FSA α σ) (NFA α σ) := ⟨fun fsa => {
-  start := {fsa.start}
-  step := fun q a => (FSA.step fsa q a).toFinset
-  accept := (FSA.accept fsa).toFinset
-}⟩
-
-instance : Coe (FSA α σ) (DFA α (Set σ)) := ⟨fun fsa => (fsa : NFA α σ).toDFA⟩
 
 structure LexerSpec (α Γ σ) where
   automaton : FSA α σ
@@ -92,9 +29,10 @@ noncomputable def isToken (specs : List (LexerSpec α Γ σ)) (xs : List α) : O
     let nfa : NFA α σ := s.automaton
     if nfa.eval xs ⊆ nfa.accept then some s.term_sym else none
 
-def isToken_comp (specs : List (LexerSpec α Γ σ)) (xs : List α) : Option Γ :=
+noncomputable def isToken_comp (specs : List (LexerSpec α Γ σ)) (xs : List α) : Option Γ :=
   specs.findSome? fun s =>
-    if ∃ q, q ∈ s.automaton.eval xs ∧ q ∈ s.automaton.accept then some s.term_sym else none
+    let dfa : DFA α (Set σ) := s.automaton
+    if dfa.eval xs ∈ dfa.accept then some s.term_sym else none
 
 -- A predicate for prefix of any token
 def isPrefix (specs : List (LexerSpec α Γ σ)) (xs : List α) : Prop :=
@@ -126,10 +64,14 @@ inductive LexRel (specs : List (LexerSpec α Γ σ)) :
       LexRel specs cs T (wr ++ [c]) →
       LexRel specs (c :: cs) T wr
 
+def Lexer ( α : Type u ) ( Γ : Type v) := List α -> Option (List Γ × List α)
+
 noncomputable def PartialLex (specs : List (LexerSpec α Γ σ)) (w : List α) : Option (List Γ × List α) :=
-  if h : ∃ out : List Γ × List α, LexRel specs w out.1 out.2 then
-    some (choose h)
-  else none
+   if h : ∃ out : List Γ × List α, LexRel specs w out.1 out.2 then
+     some (choose h)
+   else none
+
+#check ((PartialLex _) : Lexer _ _)
 
 def BuildLexingFST (fsa : FSA α σ) (oalph : List α) : FST α α σ := Id.run do
   let Q := fsa.states

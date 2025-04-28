@@ -14,6 +14,8 @@ We introduce some well known concepts and proofs.
 
 \begin{definition}[Finite State Transducer]
     \label{def:FST}
+    \lean{FST}
+    \leanok
     FST is an FSA except that transitions can have labels onto an output alphabet.
 \end{definition}
 
@@ -25,11 +27,15 @@ We introduce some well known concepts and proofs.
 
 \begin{definition}[Lexer]
     \label{def:Lexer}
+    \lean{Lexer}
+    \leanok
     A lexer is a function from $\alphabet^{*}$ to $\terms^{*} \times \alphabet^{*}$, denoting the lexed and unlexed portions of the string
 \end{definition}
 
 \begin{definition}[CFG Sentences]
     \label{def:CFGSentences}
+    \lean{cfgSentences}
+    \leanok
     \uses{def:CFG,def:Lexer}
     The sentences of a CFG, denoted $\lang^{\lexer}(\grammar)$, with respect to some function $\lexer$ is the set of strings $w$ such that $\lexer(w)$ is a member of the context free grammar.
 \end{definition}
@@ -37,6 +43,8 @@ We introduce some well known concepts and proofs.
 
 \begin{definition}[CFG Prefix Language]
     \label{def:CFGPrefixLanguage}
+    \lean{cfgSentencesPre}
+    \leanok
     \uses{def:CFG,def:Lexer,def:CFGSentences}
     The (lexer) prefix language of a grammar $\grammar$, denoted $\langpre^\lexer(\grammar)$, is the set of all prefixes of sentences of the grammar.
 \end{definition}
