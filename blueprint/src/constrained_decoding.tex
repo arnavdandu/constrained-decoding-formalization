@@ -94,6 +94,7 @@ NB: unless a checker is \emph{sound}, do note that strings in the checker interm
 \begin{definition}[Checker Sound]
     \label{def:CheckerSound}
     \uses{def:Checker,def:Vocabulary}
+    \lean{checkerSound}
     \leanok
     A checker is \emph{sound} if it is well-behaved, adhering to the two following rules:
 
@@ -107,6 +108,8 @@ NB: unless a checker is \emph{sound}, do note that strings in the checker interm
 
 \begin{definition}[Checker Complete]
     \label{def:CheckerComplete}
+    \lean{checkerComplete}
+    \leanok
     \uses{def:Checker, def:CheckerIntermediateLanguage, def:CheckerLanguage}
     A checker for a language $\lang$ is \emph{complete} if the checker language and $\lang$ are equivalent, and the checker intermediate language and $\langpre$ are equivalent. 
 \end{definition}
