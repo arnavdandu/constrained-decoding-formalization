@@ -47,22 +47,23 @@ inductive LexRel (specs : List (LexerSpec (Ch α) (Ch Γ) σ)) :
   | empty :
       LexRel specs [] [] []
 
-  -- (T₁...Tₖ T^j, ε) if c = EOS and wr ∈ L(A^j)
+  -- When the next character is EOS, and wr recognizes a token
   | done {wr tj} :
-      --c = Character.eos →
       isToken specs wr = some tj →
-      LexRel specs wr [tj] []
+      LexRel specs (wr ++ [Character.eos]) [tj] []
 
-  -- (T₁...Tₖ, wrc) if c ≠ EOS and wrc ∈ L_prefix(A^i) for some i
-  -- → (T₁...Tₖ T^j, c :: cs) if wr ∈ L(A^j) but wrc ∉ L_prefix(A^i) for all i.
+  -- When next character is NOT EOS:
+  -- (emit) If wr ∈ L(A^j) but (wr ++ c) is no longer a prefix of any token
   | emit {wr c cs tj T} :
+      c ≠ Character.eos →
       isToken specs wr = some tj →
       ¬ isPrefix specs (wr ++ [c]) →
       LexRel specs (c :: cs) T [] →
       LexRel specs (wr ++ c :: cs) (tj :: T) wr
 
-  -- (T₁...Tₖ, wrc) if c ≠ EOS and wrc ∈ L_prefix(A^i) for some i.
+  -- (extend) If (wr ++ c) is still a valid prefix of some token
   | extend {wr c cs T} :
+      c ≠ Character.eos →
       isPrefix specs (wr ++ [c]) →
       LexRel specs cs T (wr ++ [c]) →
       LexRel specs (c :: cs) T wr
