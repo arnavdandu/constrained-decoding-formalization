@@ -15,7 +15,7 @@ universe u v w
 
 variable
   {α : Type u} {Γ : Type v} {σ : Type w}
-  [DecidableEq α] [DecidableEq σ] [DecidableEq Γ] [BEq α] 
+  [DecidableEq α] [DecidableEq σ] [DecidableEq Γ] [BEq α]
   [Inhabited α] [Inhabited Γ]
   [Fintype α] [Fintype Γ]
 
