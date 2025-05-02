@@ -2,6 +2,62 @@ import Mathlib.Computability.Language
 import Mathlib.Computability.ContextFreeGrammar
 import ConstrainedDecodingFormalization.CFG
 
+-- helpers related to prefixes
+section PrefixHelper
+
+variable { α } 
+
+theorem prefix_append_rem_eq ( xs ys : List α ) ( h : xs <+: ys ) : ys = xs ++ ys.drop xs.length
+  := by
+  obtain ⟨ts, hts⟩ := h 
+  suffices h : ys.drop xs.length = ts by
+    simp[h]
+    exact Eq.symm hts
+  induction xs generalizing ys
+  case nil => 
+    simp 
+    simp at hts 
+    exact Eq.symm hts
+  case cons x xs' ih => 
+    cases ys with 
+    | nil => contradiction 
+    | cons y ys' => 
+      simp[List.drop]
+      simp at hts 
+      have ih' := ih ys' hts.right
+      exact ih'
+
+-- TODO this seems like it should be existing already? or easier
+theorem isPrefixOf_eq_rem [ BEq α ] [ LawfulBEq α ] ( xs ys : List α ) :
+      match xs.isPrefixOf? ys with
+      | some rem => ys = xs ++ rem 
+      | none => True := by 
+  split 
+  case h_2 => constructor 
+  case h_1 rem heq => 
+    induction xs, ys using List.isPrefixOf?.induct
+    <;> try simp_all
+
+theorem isPrefix_trans [ BEq α ] [ LawfulBEq α] ( xs ys zs : List α ) (h : ys <+: zs) :
+      match xs.isPrefixOf? ys with
+      | some rem => xs.isPrefixOf? zs = rem ++ zs.drop ys.length
+      | none => True
+  := by
+  split 
+  case h_2 => constructor
+  case h_1 rem heq => 
+    obtain ⟨t, hts⟩ := h 
+    have y_x_rem : ys = xs ++ rem := by 
+      have base := isPrefixOf_eq_rem xs ys 
+      simp[heq] at base
+      exact base
+    have x_p_y : xs <+: ys := Exists.intro rem (Eq.symm y_x_rem)
+    have x_p_z : xs <+: zs := by List.IsPrefixList.IsPrefix..apply?
+    
+    
+
+end PrefixHelper
+
 structure PDA (Γ π σ) where
   alph : List Γ
   states : List σ
@@ -18,30 +74,74 @@ variable { Γ π σ } [ BEq π ] ( P : PDA Γ π σ )
 instance [Inhabited σ] : Inhabited (PDA Γ π σ) :=
   ⟨PDA.mk default default default (fun _ _ => none) default⟩
 
-
-def evalFrom ( s: σ ) ( st : List π ) : List Γ → Option (σ × List π) :=
-  List.foldl ( fun s a => do
-      let (s, st) ← s
-      let (top, replace, dst) ← P.step s a
-      -- if the top prefix of stack matches top, replace
-      if st.isPrefixOf top then
-        pure (dst, replace ++ st.drop top.length)
-      else
-        none
-    ) (some (s, st))
+def fullStep ( s : Option (σ × List π) ) (t : Γ ) : Option ( σ × List π ) := do
+  let (s, st) ← s
+  let (top, replace, dst) ← P.step s t
+  -- if the top prefix of stack matches top, replace
+  if let some rem := top.isPrefixOf? st then
+    pure (dst, replace ++ rem)
+  else
+    none
 
 @[simp]
-theorem evalFrom_nil (s : σ) : P.evalFrom s [] [] = some (s, []) :=
+theorem fullStep_none ( t : Γ ) : P.fullStep none t = none :=
+  by rfl
+
+theorem fullStep_stackInvariance [ LawfulBEq π  ] : ∀ s st st' t, st <+: st' →
+   match P.fullStep (some (s, st)) t with
+  | some (sn, stn) => P.fullStep (some (s, st')) t = some (sn, stn ++ st'.drop st.length)
+  | none => True
+  := by
+  intro s st st' t
+  intro pfx
+  split
+  case h_2 => constructor
+  case h_1 heq =>
+  simp_all[fullStep]
+  cases h : P.step s t with
+  | some step =>
+    have (top, rep, dst) := step
+    simp[h] at heq
+    split at heq
+    case some.h_2 => contradiction
+    rename_i top_pfx_st
+    simp at heq
+    simp[←heq]
+    have partition := isPrefix_trans top st st' pfx 
+    simp only [top_pfx_st] at partition
+    simp[partition]
+  | none =>
+    simp[h] at heq
+
+
+def evalFrom ( s: Option ( σ × List π ) ) : List Γ → Option (σ × List π) :=
+  List.foldl ( fun s a => do fullStep P s a) s
+
+@[simp]
+theorem evalFrom_nil (s : σ) (st : List π) : P.evalFrom (some (s, st)) [] = some (s, st) :=
   rfl
 
+@[simp]
+theorem evalFrom_cons (s : σ) (st : List π) (head: Γ) (tail : List Γ) : P.evalFrom (some (s, st)) (head :: tail) = P.evalFrom (P.fullStep ( some (s, st) ) head) tail := by
+  simp[evalFrom]
+
+@[simp]
+theorem evalFrom_none  ( w : List Γ ) : P.evalFrom none w = none := by
+  induction w
+  rfl
+  rename_i h t ih
+  have : P.evalFrom none (h :: t) = P.evalFrom (P.fullStep none h) t := by rfl
+  simp[this, fullStep_none, ih]
+
+
 def evalFull : List Γ → Option (σ × List π) :=
-  fun w => (P.evalFrom P.start [] w)
+  fun w => (P.evalFrom (some (P.start, [])) w)
 
 def eval : List Γ → Option σ :=
-  fun w => (P.evalFrom P.start [] w).map Prod.fst
+  fun w => (P.evalFrom (some (P.start, [])) w).map Prod.fst
 
 def acceptsFrom ( s: σ ) (st : List π ) : Language Γ :=
-  { w | ∃ f, (P.evalFrom s st w).map Prod.fst = some f ∧ f ∈ P.accept }
+  { w | ∃ f, (P.evalFrom (some (s, st)) w).map Prod.fst = some f ∧ f ∈ P.accept }
 
 def accepts : Language Γ := P.acceptsFrom P.start []
 
@@ -54,18 +154,147 @@ def pruned : Prop :=
   -- can we eventually reach an accepting state?
   ∀ s st, (∃ w, P.evalFull w = some (s, st)) → (∃ v, v ∈ P.acceptsFrom s st)
 
--- Theorems: stack invarinace
--- todo once we reformulate FSA?
-theorem stackInvariance : 0 = 0 := sorry
+-- removes all stack operations
+def toFSA : FSA Γ σ :=
+  FSA.mk P.alph P.states P.start
+    (fun st a => match P.step st a with
+      | some (_, _, dst) => [dst]
+      | none => [])
+    P.accept
 
-theorem prunedIntermediateEqPrefix ( h : P.pruned ) :
+lemma fullStep_stepList [DecidableEq σ] :
+  ∀ s st t,
+    if let some (s', _) := P.fullStep (some (s, st)) t then
+      P.toFSA.stepList [s] t = [s']
+    else
+      True := by
+  intro s st t
+  split
+  case h_2 => simp
+  simp [PDA.toFSA, FSA.stepList]
+  rename_i heq
+  simp [PDA.fullStep] at heq
+  split
+  case h_1.h_1 heq' =>
+    simp [heq'] at heq
+    split at heq <;> try contradiction
+    simp_all
+    rfl
+  case h_1.h_2 heq' =>
+    simp [heq'] at heq
+
+lemma overApproximationLemma [DecidableEq σ] :
+  ∀ w dst' s st,
+    P.evalFrom (some (s, st)) w = some dst' →
+    P.toFSA.evalFrom s w = [dst'.fst] := by
+  intro w dst' s st h
+  induction w generalizing dst' s st
+  case nil =>
+    simp [toFSA, FSA.evalFrom]
+    simp [evalFrom] at h
+    simp [←h]
+  case cons head tail ih =>
+    simp only [PDA.evalFrom_cons] at h
+    generalize h1 : P.fullStep (some (s, st)) head = trans at h
+    cases trans with
+    | none =>
+      simp at h
+    | some next =>
+      have ih' := ih _ _ _ h
+      have := P.fullStep_stepList s st head
+      simp [h1] at this
+      simp_all [FSA.evalFrom]
+
+theorem overApproximation [DecidableEq σ] :
+  ∀ w s st, w ∉ P.toFSA.acceptsFrom s → w ∉ P.acceptsFrom s st := by
+  intro w s st
+  contrapose
+  simp
+  intro wap
+  simp[acceptsFrom] at wap
+  obtain ⟨dst, ⟨⟨stk_f, h_eval⟩, h_accept⟩⟩ := wap
+  simp [FSA.acceptsFrom]
+  exists dst
+  constructor
+  have := P.overApproximationLemma w (dst, stk_f) s st h_eval
+  simp [this]
+  have : P.toFSA.accept = P.accept := by rfl
+  simp[this, h_accept]
+
+
+lemma stackInvariance_lem [ LawfulBEq π ] : ∀ w s st st',
+  st <+: st' →
+    match P.evalFrom (some (s, st)) w with
+    | some (sf, stf) =>
+        P.evalFrom (some (s, st')) w = some (sf, stf ++ st'.drop st.length)
+    | none => True := by
+  intro w s st st'
+  intro pfx
+  induction w generalizing s st st'
+  case nil =>
+    split
+    case h_1 heq =>
+      simp[evalFrom] at heq
+      simp[heq.left, ←heq.right]
+      apply prefix_append_rem_eq
+      assumption
+    case h_2 heq => contradiction
+  case cons h t ih =>
+    have fs_si := P.fullStep_stackInvariance s st st' h pfx
+    split
+    -- we were able to tranisition properly using st
+    -- so must be able to tranisition using the larger st'
+    case h_1 heq =>
+      simp at heq
+      simp
+      generalize h2 : P.fullStep (some (s, st)) h = step at *
+      cases step
+      case some step' =>
+        simp_all
+        have step_pfx : step'.2 <+: (step'.2 ++ List.drop st.length st') := by
+          simp_all
+        have ih' := ih step'.1 step'.2 (step'.2 ++ List.drop st.length st') step_pfx
+        simp[heq] at ih'
+        exact ih'
+      case none =>
+        -- impossible
+        simp at heq
+    -- we couldn't transition properly using st
+    -- but we can't say anything about using the larger st'
+    case h_2 heq =>
+      simp
+
+theorem stackInvariance [ LawfulBEq π ] : ∀ w s st st',
+  st <+: st' → w ∈ P.acceptsFrom s st → w ∈ P.acceptsFrom s st'  := by
+  intro w s st st'
+  intro pfx
+  intro wap
+  simp[acceptsFrom] at wap
+  obtain ⟨dst, ⟨⟨stk_f, h_eval⟩, h_accept⟩⟩ := wap
+  have := P.stackInvariance_lem w s st st' pfx
+  simp[h_eval] at this
+  simp[acceptsFrom]
+  constructor
+  case w => exact dst
+  constructor
+  constructor
+  repeat assumption
+
+
+theorem acceptEmptyStk_acceptAll [ LawfulBEq π ] : ∀ w s st,
+  w ∈ P.acceptsFrom s [] → w ∈ P.acceptsFrom s st := by
+  intro w s st
+  apply stackInvariance
+  simp
+
+theorem pruned_intermediate_eq_prefix ( h : P.pruned ) :
   P.intermediate = P.accepts.prefixes :=
   sorry
 
 -- builds parser from cfg
 def CFGStackAlphabet := Nat
-variable [ BEq CFGStackAlphabet ]
 def CFGState := Nat
+variable [ BEq CFGStackAlphabet ]
 def fromCFG ( C : ContextFreeGrammar Γ ) : PDA Γ CFGStackAlphabet CFGState :=
   sorry
 
