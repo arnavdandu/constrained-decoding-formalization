@@ -71,6 +71,19 @@ def FST.mkStep (transitions : List (σ × α × (List σ × Γ))) : σ → α �
     |>.map (fun (_, _, ts) => ts)
     |>.getD ([], default)
 
+variable (F : FST α Γ σ)
+
+def FST.stepList (S : List σ) (a : α) : List σ × List Γ :=
+  let states := S.flatMap (fun s => (F.step s a).1)
+  let output := S.flatMap (fun s => (F.step s a).2)
+  (states.eraseDups, output)
+
+def FST.evalFrom (start : σ) (input : List α) : List σ × List Γ :=
+  input.foldl (fun acc a => F.stepList acc.1 a) ([start], [])
+
+def FST.eval (input : List α) : List σ × List Γ :=
+  F.evalFrom F.start input
+
 -- same as FST, but Option α allows for ε-transitions
 structure εFST (α Γ σ) where
   alph : List α

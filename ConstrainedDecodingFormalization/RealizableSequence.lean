@@ -7,6 +7,7 @@ import Mathlib.Computability.RegularExpressions
 import Mathlib.Data.Set.Defs
 import Mathlib.Data.Set.Basic
 import Mathlib.Data.List.Basic
+import Mathlib.Data.Finset.Range
 
 open Classical List
 
@@ -67,5 +68,12 @@ noncomputable def BuildDetokenizingFST (V : Vocab (Ch α)) [Fintype (Ch α)] : �
 
   ⟨V, characterAlphabetSet α, Q, q₀, FST.mkStep δ, F⟩
 
+noncomputable def evalTokenLevelFST (T : Token (Ch α)) (fst_lex : FST (Ch α) (Token (Ch α)) σ) (fst_detok : εFST (Token (Ch α)) (Ch α) (State (Ch α))) :
+    List σ × List (Token (Ch α)) :=
+  let detok_out := (fst_detok.step fst_detok.start T).2
+  fst_lex.eval detok_out
+
+noncomputable def BuildTokenLevelFST (T : Token (Ch α)) (fst_lex : FST (Ch α) (Token (Ch α)) σ) (fst_detok : εFST (Token (Ch α)) (Ch α) (State (Ch α))) :
+    FST (Token (Ch α)) (Token (Ch α)) σ :=
+  sorry 
 end Symbols
-#check Vocabulary
