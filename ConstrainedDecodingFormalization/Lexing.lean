@@ -77,7 +77,9 @@ noncomputable def PartialLex (specs : List (LexerSpec (Ch α) (Ch Γ) σ)) (w : 
 
 #check ((PartialLex _) : Lexer _ _)
 
-def BuildLexingFST (fsa : FSA (Ch α) σ) (oalph : List (Ch α)) : FST (Ch α) (Ch α) σ := Id.run do
+abbrev Token (α : Type u) := List α
+
+def BuildLexingFST (fsa : FSA (Ch α) σ) (tokens : List (Token (Ch α))) : FST (Ch α) (Token (Ch α)) σ := Id.run do
   let Q := fsa.states
   let trans := fsa.transitions
   let alph := fsa.alph
@@ -85,14 +87,14 @@ def BuildLexingFST (fsa : FSA (Ch α) σ) (oalph : List (Ch α)) : FST (Ch α) (
 
   let F' := [q0]
 
-  let mut trans' : List (σ × (Ch α) × (List σ × List (Ch α))) := trans.map (fun (q, c, q') => (q, c, (q', [])))
-  for q in Q do
-    for T in oalph do
-      if not (fsa.step q T).isEmpty then
+  let mut trans' : List (σ × (Ch α) × (List σ × List (Token (Ch α)))) := trans.map (fun (q, c, q') => (q, c, (q', [])))
+  for s in Q do
+    for T in tokens do
+      for q in fsa.evalFrom s T do
         for c in alph do
           for q' in Q do
             if ∃ q'' ∈ Q, q'' ∉ fsa.step q c ∧ q' ∈ (fsa.step q0 c) then
               trans' := trans'.insert (q, c, ([q'], [T]))
-        trans' := trans'.insert (q, Character.eos, ([q0], [T, Character.eos]))
+        trans' := trans'.insert (q, Character.eos, ([q0], [T, [Character.eos]]))
 
-  ⟨alph, oalph, Q, q0, FST.mkStep trans', F'⟩
+  ⟨alph, tokens, Q, q0, FST.mkStep trans', F'⟩
