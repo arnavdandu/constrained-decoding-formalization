@@ -6,7 +6,7 @@ import Mathlib.Data.Finset.Basic
 universe u v w y
 
 variable
-  {α : Type u} {Γ : Type v} {σ : Type w} 
+  {α : Type u} {Γ : Type v} {σ : Type w}
   [DecidableEq α] [DecidableEq σ]
   [Inhabited α] [Inhabited Γ]
   [Fintype α] [Fintype Γ]
@@ -19,8 +19,6 @@ structure FSA (α σ) where
   accept : List σ
 
 variable (A : FSA α σ)
-
-#check List.flatten []
 
 def FSA.transitions (fsa : FSA α σ) : List (σ × α × List σ) :=
   fsa.states.flatMap (fun q =>
@@ -80,4 +78,3 @@ instance : Coe (FSA α σ) (NFA α σ) := ⟨fun fsa => {
 }⟩
 
 instance : Coe (FSA α σ) (DFA α (Set σ)) := ⟨fun fsa => (fsa : NFA α σ).toDFA⟩
-
