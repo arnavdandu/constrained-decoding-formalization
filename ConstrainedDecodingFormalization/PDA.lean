@@ -7,26 +7,6 @@ section PrefixHelper
 
 variable { α } 
 
-theorem prefix_append_rem_eq ( xs ys : List α ) ( h : xs <+: ys ) : ys = xs ++ ys.drop xs.length
-  := by
-  obtain ⟨ts, hts⟩ := h 
-  suffices h : ys.drop xs.length = ts by
-    simp[h]
-    exact Eq.symm hts
-  induction xs generalizing ys
-  case nil => 
-    simp 
-    simp at hts 
-    exact Eq.symm hts
-  case cons x xs' ih => 
-    cases ys with 
-    | nil => contradiction 
-    | cons y ys' => 
-      simp[List.drop]
-      simp at hts 
-      have ih' := ih ys' hts.right
-      exact ih'
-
 -- TODO this seems like it should be existing already? or easier
 theorem isPrefixOf_eq_rem [ BEq α ] [ LawfulBEq α ] ( xs ys : List α ) :
       match xs.isPrefixOf? ys with
@@ -38,7 +18,7 @@ theorem isPrefixOf_eq_rem [ BEq α ] [ LawfulBEq α ] ( xs ys : List α ) :
     induction xs, ys using List.isPrefixOf?.induct
     <;> try simp_all
 
-theorem isPrefix_trans [ BEq α ] [ LawfulBEq α] ( xs ys zs : List α ) (h : ys <+: zs) :
+theorem isPrefix_merge [ BEq α ] [ LawfulBEq α] ( xs ys zs : List α ) (h : ys <+: zs) :
       match xs.isPrefixOf? ys with
       | some rem => xs.isPrefixOf? zs = rem ++ zs.drop ys.length
       | none => True
@@ -46,16 +26,30 @@ theorem isPrefix_trans [ BEq α ] [ LawfulBEq α] ( xs ys zs : List α ) (h : ys
   split 
   case h_2 => constructor
   case h_1 rem heq => 
-    obtain ⟨t, hts⟩ := h 
-    have y_x_rem : ys = xs ++ rem := by 
-      have base := isPrefixOf_eq_rem xs ys 
-      simp[heq] at base
-      exact base
-    have x_p_y : xs <+: ys := Exists.intro rem (Eq.symm y_x_rem)
-    have x_p_z : xs <+: zs := by List.IsPrefixList.IsPrefix..apply?
+    have y_x_rem : xs ++ rem = ys := List.append_eq_of_isPrefixOf?_eq_some heq
+    have x_p_y : xs <+: ys := Exists.intro rem y_x_rem
+    have x_isp_z : xs.isPrefixOf zs := List.isPrefixOf_iff_prefix.mpr (List.IsPrefix.trans x_p_y h)
+    cases h_xs_isp?_zs : xs.isPrefixOf? zs with 
+    | some rem' => 
+      have xs_rem'_zs := List.append_eq_of_isPrefixOf?_eq_some h_xs_isp?_zs
+      have xs_rem_ys : ys ++ zs.drop ys.length = zs := List.prefix_iff_eq_append.mp h
+      conv at xs_rem_ys => 
+        lhs 
+        lhs 
+        rw[←y_x_rem]
+      rw[←xs_rem_ys] at xs_rem'_zs 
+      simp at xs_rem'_zs
+      simp 
+      assumption
+    | none => 
+      have true : (xs.isPrefixOf? zs).isSome = true := by
+        rw[(List.isSome_isPrefixOf?_eq_isPrefixOf xs zs)]
+        assumption
+      have false : (xs.isPrefixOf? zs).isSome = false := by 
+        rw[h_xs_isp?_zs]
+        apply Option.isSome_none 
+      simp_all
     
-    
-
 end PrefixHelper
 
 structure PDA (Γ π σ) where
@@ -107,7 +101,7 @@ theorem fullStep_stackInvariance [ LawfulBEq π  ] : ∀ s st st' t, st <+: st' 
     rename_i top_pfx_st
     simp at heq
     simp[←heq]
-    have partition := isPrefix_trans top st st' pfx 
+    have partition := isPrefix_merge top st st' pfx 
     simp only [top_pfx_st] at partition
     simp[partition]
   | none =>
@@ -236,8 +230,7 @@ lemma stackInvariance_lem [ LawfulBEq π ] : ∀ w s st st',
     case h_1 heq =>
       simp[evalFrom] at heq
       simp[heq.left, ←heq.right]
-      apply prefix_append_rem_eq
-      assumption
+      exact Eq.symm (List.prefix_iff_eq_append.mp pfx)
     case h_2 heq => contradiction
   case cons h t ih =>
     have fs_si := P.fullStep_stackInvariance s st st' h pfx
