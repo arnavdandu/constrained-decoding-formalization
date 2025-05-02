@@ -33,7 +33,14 @@ abbrev Output (α : Type u):= List (List α)
 
 #check Language (Ch α)
 
-noncomputable def BuildDetokenizingFST (V : Vocab (Ch α)) : FST (Token (Ch α)) (Token (Ch α)) (State (Ch α)) := Id.run do
+instance TokenVocab [BEq (Ch α)] [DecidableEq (Ch α)] : Vocabulary (Ch α) (Token (Ch α)) where
+  flatten := id
+  embed a := [a]
+  eos := []
+  fe a := by simp
+  empty b := by simp [Vocabulary.eos]
+
+noncomputable def BuildDetokenizingFST (V : Vocab (Ch α)) : FST (Token (Ch α)) (Ch α) (State (Ch α)) := Id.run do
   let q_ε := ([] : List (Ch α))
   let mut Q := [q_ε]
   let F := [q_ε]
@@ -49,11 +56,11 @@ noncomputable def BuildDetokenizingFST (V : Vocab (Ch α)) : FST (Token (Ch α))
           let q_c1_i := s.take i
           let q_ci := [s[i]]
           Q := Q.insert q_c1_i
-          δ := δ.insert (q_prev, q_ε, ([q_ci], [q_c1_i]))
+          δ := δ.insert (q_prev, q_ε, ([q_c1_i], q_ci))
           q_prev := q_c1_i
         let q_c1_k := s.take k
         let q_ck := [s[k - 1]]
-        δ := δ.insert (q_prev, q_c1_k, ([q_ck], [q_ε]))
+        δ := δ.insert (q_prev, q_c1_k, ([q_ck], q_ε))
 
   ⟨V, V, Q, q₀, FST.mkStep δ, F⟩
 

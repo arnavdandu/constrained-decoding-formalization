@@ -1,4 +1,5 @@
 import Mathlib.Computability.NFA
+import Mathlib.Computability.EpsilonNFA
 import Mathlib.Computability.DFA
 import Mathlib.Computability.RegularExpressions
 import Mathlib.Data.Finset.Basic
@@ -47,7 +48,6 @@ def FSA.acceptsFrom ( s: σ ) : Language α :=
   { w | ∃ f ∈ A.evalFrom s w, f ∈ A.accept }
 
 def FSA.accepts : Language α := A.acceptsFrom A.start
-  
 
 structure FST (α Γ σ) where
   alph : List α
@@ -66,6 +66,29 @@ def FST.transitions (fst : FST α Γ σ) : List (σ × α × (List σ × List Γ
   )
 
 def FST.mkStep (transitions : List (σ × α × (List σ × Γ))) : σ → α → (List σ × Γ) :=
+  fun s a =>
+    transitions.find? (fun (s', a', _) => s = s' && a = a')
+    |>.map (fun (_, _, ts) => ts)
+    |>.getD ([], default)
+
+-- same as FST, but Option α allows for ε-transitions
+structure εFST (α Γ σ) where
+  alph : List α
+  oalph : List Γ
+  states : List σ
+  start : σ
+  step : σ → Option α → (List σ × List Γ)
+  accept : List σ
+
+def εFST.transitions (fst : εFST α Γ σ) : List (σ × Option α × (List σ × List Γ)) :=
+  fst.states.flatMap (fun q =>
+    (fst.alph.map (fun c =>
+        (q, c, fst.step q c)
+      )
+    )
+  )
+
+def εFST.mkStep (transitions : List (σ × Option α × (List σ × Γ))) : σ → Option α → (List σ × Γ) :=
   fun s a =>
     transitions.find? (fun (s', a', _) => s = s' && a = a')
     |>.map (fun (_, _, ts) => ts)
