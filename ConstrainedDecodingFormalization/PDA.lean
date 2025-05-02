@@ -6,17 +6,7 @@ import ConstrainedDecodingFormalization.CFG
 section PrefixHelper
 
 variable { α } 
-
--- TODO this seems like it should be existing already? or easier
-theorem isPrefixOf_eq_rem [ BEq α ] [ LawfulBEq α ] ( xs ys : List α ) :
-      match xs.isPrefixOf? ys with
-      | some rem => ys = xs ++ rem 
-      | none => True := by 
-  split 
-  case h_2 => constructor 
-  case h_1 rem heq => 
-    induction xs, ys using List.isPrefixOf?.induct
-    <;> try simp_all
+open List 
 
 theorem isPrefix_merge [ BEq α ] [ LawfulBEq α] ( xs ys zs : List α ) (h : ys <+: zs) :
       match xs.isPrefixOf? ys with
@@ -49,7 +39,7 @@ theorem isPrefix_merge [ BEq α ] [ LawfulBEq α] ( xs ys zs : List α ) (h : ys
         rw[h_xs_isp?_zs]
         apply Option.isSome_none 
       simp_all
-    
+
 end PrefixHelper
 
 structure PDA (Γ π σ) where

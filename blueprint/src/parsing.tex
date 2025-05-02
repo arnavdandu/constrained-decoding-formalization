@@ -44,6 +44,15 @@ Results related to construction of the PDA
 
 \begin{lemma}[PDA Stack Invariance]
     \label{lem:PDAStackInvariance}
+    \lean{PDA.stackInvariance}
+    \leanok
     If a PDA $\pushdown$ accepts an input sequence $w$ in state $q$ with stack configuration $\gamma$, then $w$ is also accepted in the same state $q$ when the stack configuration is $\gamma' \cdot \gamma$ for some $\gamma'$ (i.e., when $\gamma$ appears at the top of the stack with additional symbols beneath it).
 \end{lemma}
 
+
+\begin{lemma}[PDA Over Approximation]
+    \label{lem:}
+    \lean{PDA.overApproximation}
+    \leanok
+    If a PDA $\pushdown$ with all stack operations removed does not accept an input sequence $w$ under initial state $q$, then irrespective of the initial stack configuration $\gamma$, the original PDA also does not accept the input sequence $w$ under initial state $q$ and stack configuration $\gamma$. 
+\end{lemma}

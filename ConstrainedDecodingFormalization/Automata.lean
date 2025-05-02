@@ -45,6 +45,12 @@ def FSA.evalFrom (start : σ) : List α → List σ :=
 def FSA.eval : List α → List σ :=
   A.evalFrom A.start
 
+def FSA.acceptsFrom ( s: σ ) : Language α :=
+  { w | ∃ f ∈ A.evalFrom s w, f ∈ A.accept }
+
+def FSA.accepts : Language α := A.acceptsFrom A.start
+  
+
 structure FST (α Γ σ) where
   alph : List α
   oalph : List Γ
