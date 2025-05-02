@@ -40,7 +40,10 @@ instance TokenVocab [BEq (Ch α)] [DecidableEq (Ch α)] : Vocabulary (Ch α) (To
   fe a := by simp
   empty b := by simp [Vocabulary.eos]
 
-noncomputable def BuildDetokenizingFST (V : Vocab (Ch α)) : FST (Token (Ch α)) (Ch α) (State (Ch α)) := Id.run do
+noncomputable def characterAlphabetSet (α : Type u) [Fintype (Ch α)] : List (Ch α) :=
+  (Finset.univ : Finset (Ch α)).toList
+
+noncomputable def BuildDetokenizingFST (V : Vocab (Ch α)) [Fintype (Ch α)] : εFST (Token (Ch α)) (Ch α) (State (Ch α)) := Id.run do
   let q_ε := ([] : List (Ch α))
   let mut Q := [q_ε]
   let F := [q_ε]
@@ -56,13 +59,13 @@ noncomputable def BuildDetokenizingFST (V : Vocab (Ch α)) : FST (Token (Ch α))
           let q_c1_i := s.take i
           let q_ci := [s[i]]
           Q := Q.insert q_c1_i
-          δ := δ.insert (q_prev, q_ε, ([q_c1_i], q_ci))
+          δ := δ.insert (q_prev, none, ([q_c1_i], q_ci))
           q_prev := q_c1_i
         let q_c1_k := s.take k
         let q_ck := [s[k - 1]]
         δ := δ.insert (q_prev, q_c1_k, ([q_ck], q_ε))
 
-  ⟨V, V, Q, q₀, FST.mkStep δ, F⟩
+  ⟨V, characterAlphabetSet α, Q, q₀, FST.mkStep δ, F⟩
 
 end Symbols
 #check Vocabulary
