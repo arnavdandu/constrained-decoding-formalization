@@ -8,6 +8,7 @@ import Mathlib.Data.Finset.Basic
 
 import ConstrainedDecodingFormalization.Automata
 import ConstrainedDecodingFormalization.Vocabulary
+import ConstrainedDecodingFormalization.Partition
 
 open Classical List
 
@@ -98,3 +99,23 @@ def BuildLexingFST (fsa : FSA (Ch α) σ) (tokens : List (Token (Ch α))) : FST 
         trans' := trans'.insert (q, Character.eos, ([q0], [T, [Character.eos]]))
 
   ⟨alph, tokens, Q, q0, FST.mkStep trans', F'⟩
+
+
+
+def PartialLexSplit 
+    (specs : List (LexerSpec (Ch α) (Ch Γ) σ)) (w : List (Ch α)) 
+    (h : 1 = 1) : 
+    match PartialLex specs w with 
+    | some (tokens, unlexed) => 
+      -- exists a partition corresponding to the output of partial lex
+      unlexed = [] ∧ 
+      ∃ p, IsPartition p w ∧ p.length = tokens.length ∧ 
+        ∀ t ∈ (List.zip tokens p), ∃ spec ∈ specs, t.fst = spec.term_sym ∧ t.snd ∈ spec.automaton.accepts
+    | none => 
+      -- there is no possible partitions in which we can lex it
+      ∀ p, IsPartition p w → ∃ x ∈ p, ∀ lexer ∈ specs, x ∉ lexer.automaton.accepts
+      := by sorry
+
+def LexingFST_eq_PartialLex := 0
+def soundnessLemma := 0
+def completenessLemma := 0

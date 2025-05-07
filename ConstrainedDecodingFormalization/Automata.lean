@@ -84,6 +84,9 @@ def FST.evalFrom (start : σ) (input : List α) : List σ × List Γ :=
 def FST.eval (input : List α) : List σ × List Γ :=
   F.evalFrom F.start input
 
+def FST.producible (q : σ) : Language Γ := 
+    { t | ∃ w, (F.evalFrom q w).snd = t } 
+
 -- same as FST, but Option α allows for ε-transitions
 structure εFST (α Γ σ) where
   alph : List α
@@ -106,6 +109,7 @@ def εFST.mkStep (transitions : List (σ × Option α × (List σ × Γ))) : σ 
     transitions.find? (fun (s', a', _) => s = s' && a = a')
     |>.map (fun (_, _, ts) => ts)
     |>.getD ([], default)
+    
 
 instance : Coe (FSA α σ) (NFA α σ) := ⟨fun fsa => {
   start := {fsa.start}

@@ -10,3 +10,6 @@ PDA.fromCFG
 PDA.fromCFGCorrect
 PDA.pruned
 PDA.fromCFGPruned
+PDA.stackInvariance
+PDA.overApproximation
+FST.producible

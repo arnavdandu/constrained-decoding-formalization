@@ -263,7 +263,6 @@ theorem stackInvariance [ LawfulBEq π ] : ∀ w s st st',
   constructor
   repeat assumption
 
-
 theorem acceptEmptyStk_acceptAll [ LawfulBEq π ] : ∀ w s st,
   w ∈ P.acceptsFrom s [] → w ∈ P.acceptsFrom s st := by
   intro w s st

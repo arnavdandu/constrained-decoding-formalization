@@ -48,6 +48,8 @@
 
 \begin{definition}[Producible]
     \label{def:Producible}
+    \lean{FST.producible}
+    \leanok
     Given a state $q$, the set of producible terminals $\producible(q)$ is defined as $\producible(q) = \{ T_1 \in \terms \mid q \xrightarrow{w:T_1 \ldots T_k}^* q' \in \delta^* \textrm{ for some } q'\in Q, w \in \alphabet^* \}$
 \end{definition}
 
