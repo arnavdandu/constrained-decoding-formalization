@@ -5,6 +5,7 @@ cfgSentencesPre
 PDA
 checkerSound
 checkerComplete
+PartialLexSplit
 BuildLexingFST
 PDA.fromCFG
 PDA.fromCFGCorrect

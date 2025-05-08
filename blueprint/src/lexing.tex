@@ -45,6 +45,8 @@ Results related to the lexing and detokenizing.
 
 \begin{theorem}[Lex returns iff input is Language of Lexer Specification]
     \label{thm:LexSplit}
+    \lean{PartialLexSplit}
+    \leanok
     \uses{def:PartialLexer,def:LexerASpecification}
     Let $\lang(A_i)$ be the languages of each input automata.
     If $\lexer$ fails to return on some input string $w$, then among all possible partitions of $w$ into a set of strings $w_1 \ldots w_k$, there exists an $i$ such that $w_i \notin \lang(A_j)$ for all j. Conversely, if $\texttt{Lex} = (T_1, \ldots T_k, \epsilon)$, then $w$ may be partitioned into $w_1 \ldots w_k$ such that $w$ is the concatenation of $w_1 \ldots w_k$ and each $w_i \in \lang(A_j)$ for some $j$.
