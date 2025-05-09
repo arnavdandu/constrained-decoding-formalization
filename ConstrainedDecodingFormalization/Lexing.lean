@@ -49,9 +49,10 @@ inductive LexRel (specs : List (LexerSpec (Ch α) (Ch Γ) σ)) :
       LexRel specs [] [] []
 
   -- When the next character is EOS, and wr recognizes a token
-  | done {wr tj} :
+  | done {wr ws ts tj} :
+      LexRel specs ws ts wr → 
       isToken specs wr = some tj →
-      LexRel specs (wr ++ [Character.eos]) [tj] []
+      LexRel specs (ws ++ [.eos]) (ts ++ [tj]) []
 
   -- When next character is NOT EOS:
   -- (emit) If wr ∈ L(A^j) but (wr ++ c) is no longer a prefix of any token
@@ -103,9 +104,8 @@ def BuildLexingFST (fsa : FSA (Ch α) σ) (tokens : List (Token (Ch α))) : FST 
 
 
 def PartialLexSplit 
-    (specs : List (LexerSpec (Ch α) (Ch Γ) σ)) (w : List (Ch α)) 
-    (h : 1 = 1) : 
-    match PartialLex specs w with 
+    (specs : List (LexerSpec (Ch α) (Ch Γ) σ)) (w : List (Ch α)) : 
+    match PartialLex specs (w ++ [.eos]) with 
     | some (tokens, unlexed) => 
       -- exists a partition corresponding to the output of partial lex
       unlexed = [] ∧ 
@@ -114,7 +114,20 @@ def PartialLexSplit
     | none => 
       -- there is no possible partitions in which we can lex it
       ∀ p, IsPartition p w → ∃ x ∈ p, ∀ lexer ∈ specs, x ∉ lexer.automaton.accepts
-      := by sorry
+      := by
+  split 
+  case h_1 tokens unlexed heq => 
+    simp[PartialLex] at heq
+    rcases heq 
+    case intro w1 h => 
+    cases w1 
+    case intro w' h' => 
+    cases h'
+    case intro w'' h'' => 
+    sorry
+  case h_2 =>
+    sorry
+
 
 def LexingFST_eq_PartialLex := 0
 def soundnessLemma := 0
