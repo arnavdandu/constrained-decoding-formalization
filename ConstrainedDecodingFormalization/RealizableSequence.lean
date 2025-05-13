@@ -1,6 +1,7 @@
 import ConstrainedDecodingFormalization.Automata
 import ConstrainedDecodingFormalization.Vocabulary
 import ConstrainedDecodingFormalization.Lexing
+import ConstrainedDecodingFormalization.RegularExpressionsToEpsilonNFA
 import Mathlib.Computability.NFA
 import Mathlib.Computability.DFA
 import Mathlib.Computability.RegularExpressions
@@ -9,7 +10,7 @@ import Mathlib.Data.Set.Basic
 import Mathlib.Data.List.Basic
 import Mathlib.Data.Finset.Range
 
-open Classical List
+open Classical List RegularExpression
 
 universe u v w
 
@@ -70,12 +71,12 @@ noncomputable def BuildDetokenizingFST (V : Vocab (Ch α)) [Fintype (Ch α)] : �
 
   ⟨V, oalph, Q, q₀, FST.mkStep δ, F⟩
 
-noncomputable def evalTokenLevelFST (q : State (Ch α)) (T : Token (Ch α)) (fst_lex : FST (Ch α) (Token (Ch α)) σ) (fst_detok : εFST (Token (Ch α)) (Ch α) (State (Ch α))) :
-    List σ × List (Token (Ch α)) :=
+noncomputable def evalTokenLevelFST (q : State (Ch α)) (T : Token (Ch α)) (fst_lex : FST (Ch α) (Token (Ch α)) (St P)) (fst_detok : εFST (Token (Ch α)) (Ch α) (State (Ch α))) :
+    List (St P) × List (Token (Ch α)) :=
   let detok_out := (fst_detok.step q T).2
   fst_lex.eval detok_out
 
-noncomputable def BuildTokenLevelFST (fst_lex : FST (Ch α) (Token (Ch α)) σ) (fst_detok : εFST (Token (Ch α)) (Ch α) (State (Ch α))) :
+noncomputable def BuildTokenLevelFST (fst_lex : FST (Ch α) (Token (Ch α)) (St P)) (fst_detok : εFST (Token (Ch α)) (Ch α) (State (Ch α))) :
     FST (Token (Ch α)) (Token (Ch α)) σ := Id.run do
 
   let Q_in := fst_detok.states
@@ -95,5 +96,5 @@ noncomputable def BuildTokenLevelFST (fst_lex : FST (Ch α) (Token (Ch α)) σ) 
 noncomputable def BuildInverseTokenSpannerTable (fst_comp : FST (Token (Ch α)) (Token (Ch α)) σ) : σ × List (Token (Ch α)) → List (Token (Ch α)) := Id.run do
   sorry
 
-  
+
 end Symbols
