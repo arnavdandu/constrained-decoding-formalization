@@ -51,29 +51,49 @@ noncomputable def BuildDetokenizingFST (V : Vocab (Ch α)) [Fintype (Ch α)] : �
   let q₀ := q_ε
   let mut δ := []
 
+  let oalph := (List.flatten V).dedup
+
   for s in V do
     let k := s.length
     let mut q_prev := q_ε
     if h : k > 0 then
-      for i in [1:k] do
+      for i in [1:k-1] do
         if h' : i < k then
           let q_c1_i := s.take i
-          let q_ci := [s[i]]
+          let c_i := [s[i]]
           Q := Q.insert q_c1_i
-          δ := δ.insert (q_prev, none, ([q_c1_i], q_ci))
+          δ := δ.insert (q_prev, none, ([q_c1_i], c_i))
           q_prev := q_c1_i
-        let q_c1_k := s.take k
-        let q_ck := [s[k - 1]]
-        δ := δ.insert (q_prev, q_c1_k, ([q_ck], q_ε))
+        let c1_k := s.take k
+        let c_k := [s[k - 1]]
+        δ := δ.insert (q_prev, c1_k, ([q_ε], c_k))
 
-  ⟨V, characterAlphabetSet α, Q, q₀, FST.mkStep δ, F⟩
+  ⟨V, oalph, Q, q₀, FST.mkStep δ, F⟩
 
-noncomputable def evalTokenLevelFST (T : Token (Ch α)) (fst_lex : FST (Ch α) (Token (Ch α)) σ) (fst_detok : εFST (Token (Ch α)) (Ch α) (State (Ch α))) :
+noncomputable def evalTokenLevelFST (q : State (Ch α)) (T : Token (Ch α)) (fst_lex : FST (Ch α) (Token (Ch α)) σ) (fst_detok : εFST (Token (Ch α)) (Ch α) (State (Ch α))) :
     List σ × List (Token (Ch α)) :=
-  let detok_out := (fst_detok.step fst_detok.start T).2
+  let detok_out := (fst_detok.step q T).2
   fst_lex.eval detok_out
 
-noncomputable def BuildTokenLevelFST (T : Token (Ch α)) (fst_lex : FST (Ch α) (Token (Ch α)) σ) (fst_detok : εFST (Token (Ch α)) (Ch α) (State (Ch α))) :
-    FST (Token (Ch α)) (Token (Ch α)) σ :=
-  sorry 
+noncomputable def BuildTokenLevelFST (fst_lex : FST (Ch α) (Token (Ch α)) σ) (fst_detok : εFST (Token (Ch α)) (Ch α) (State (Ch α))) :
+    FST (Token (Ch α)) (Token (Ch α)) σ := Id.run do
+
+  let Q_in := fst_detok.states
+  let Q_comp := fst_lex.states
+  let alph := fst_detok.alph
+  let oalph := fst_lex.oalph
+  let mut trans := fst_lex.stepList
+  let q₀ := fst_lex.start
+  let F := fst_lex.accept
+
+  for T in alph do
+    let lex_out := (evalTokenLevelFST fst_detok.start T fst_lex fst_detok)
+
+
+  sorry
+
+noncomputable def BuildInverseTokenSpannerTable (fst_comp : FST (Token (Ch α)) (Token (Ch α)) σ) : σ × List (Token (Ch α)) → List (Token (Ch α)) := Id.run do
+  sorry
+
+  
 end Symbols
