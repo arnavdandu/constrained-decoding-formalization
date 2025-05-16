@@ -19,3 +19,4 @@ InverseTokenSpannerTable
 FST.producible
 PreprocessParser
 PreprocessParser
+ComputeValidTokenMask

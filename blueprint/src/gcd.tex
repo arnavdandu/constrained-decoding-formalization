@@ -33,6 +33,8 @@
 
 \begin{definition}[ComputeValidTokenMask]
     \label{alg:ComputeTokenMask}
+    \leanok 
+    \lean{ComputeValidTokenMask}
     \[
         \begin{array}{l}
             \textbf{Input:} \text{PDA } \mathcal{P}, \text{ FSA } \mathcal{A}, \text{ Inverse token spanner table } T_{\text{inv}} \\
@@ -57,7 +59,7 @@
     A token is a member of the token mask produced ComputeValidTokenMasks if and only if the composite $\pushdown \circ \transducer_{\automaton \circ \vocab}$ accepts the token in the current lexer and parser state
 \end{lemma}
 
-\begin{lemma}
+\begin{lemma}[Token Mask Completeness Lemma]
     \label{lem:completeness-lemma}
     Given $w \in \vocab^\ast$ such that $q \xrightarrow{w: T_1 \ldots T_k}^\ast q'$ via the lexing transducer and $T_1 \ldots T_k \in \lang(\grammar) \setminus \langpre(\grammar)$,
     if $w \in \langpre^\lexer(\grammar)$ then there exists $T \in \producible(q')$ such that $T_1 \ldots T_k T \in \langpre(\grammar)$.
@@ -85,7 +87,7 @@
     Therefore, $v \in \inversetable(q', T_{k+1} \ldots T_m T)$, and hence $v \in \vocab_{\textit{allowed}}$.
 \end{proof}
 
-\begin{lemma}[Token Mask Soundness]
+\begin{lemma}[Token Mask Soundness Lemma]
     \label{lem:soundness-lemma}
     Given $w \in \vocab^\ast$ such that $q \xrightarrow{w: T_1 \ldots T_k}^\ast q'$ via the lexing transducer and $T_1 \ldots T_k \in \lang(\grammar) \setminus \langpre(\grammar)$,
     if there exists $T \in \producible(q')$ such that $T_1 \ldots T_k T \in \langpre(\grammar)$ then $w \in \langpre^\lexer(\grammar)$. 
