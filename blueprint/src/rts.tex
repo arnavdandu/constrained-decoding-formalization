@@ -1,6 +1,8 @@
 \subsection{Realizable Terminal Sequences}
 \begin{definition}[Realizable Terminal Sequence]
     \label{def:RealizableTerminalSequence}
+    \lean{RealizableSequences}
+    \leanok
     Given a token vocabulary $\mathcal{V}$ and FSA $\mathcal{A}$, let $\delta$ be the set of transitions in the token-level lexing transducer $\mathcal{T}_{\mathcal{A}} \circ \mathcal{T}_{\mathcal{V}}$. The set of \textit{realizable terminal sequences} $Re_{\mathcal{A} \circ \mathcal{V}}$ is defined as
     \[
     Re_{\mathcal{A} \circ \mathcal{V}} = \{ T_1 \ldots T_k T \mid q \xrightarrow{t:T_1 \ldots T_k} q' \in \delta \text{ and } T \text{ can be generated along some path from } q' \}.
@@ -9,6 +11,8 @@
 
 \begin{definition}[Inverse Token Spanner Table]
     \label{def:InverseTokenSpannerTable}
+    \lean{InverseTokenSpannerTable}
+    \leanok 
     Given a lexer state $q \in Q_{\mathcal{A} \circ \mathcal{V}}$ and $T_1 \ldots T_k T \in Re_{\mathcal{A} \circ \mathcal{V}}$, the entry $T_{\text{inv}}(q, \alpha)$ in the \textit{inverse token spanner table} $T_{\text{inv}}$ is the set of tokens that generates $T_1 \ldots T_k T$ from state $q$. Formally,
     \[
     T_{\text{inv}}(q, T_1 \ldots T_k T) = \{ t \mid q \xrightarrow{t:T_1 \ldots T_k} q' \in \delta \text{ and } T \text{ can be generated along some path from } q' \}.
