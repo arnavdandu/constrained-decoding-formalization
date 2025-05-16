@@ -87,6 +87,9 @@ def FST.eval (input : List α) : List σ × List Γ :=
 def FST.producible (q : σ) : Language Γ := 
     { t | ∃ w, (F.evalFrom q w).snd = t } 
 
+def FST.singleProducible (q : σ) : Set Γ :=
+    { t | ∃ w, (F.evalFrom q w).snd = [t] } 
+
 -- same as FST, but Option α allows for ε-transitions
 structure εFST (α Γ σ) where
   alph : List α
