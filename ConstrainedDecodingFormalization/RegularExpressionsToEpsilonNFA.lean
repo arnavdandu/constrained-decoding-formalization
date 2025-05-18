@@ -6,6 +6,12 @@ Authors: Anthony DeRossi
 import Mathlib.Computability.RegularExpressions
 import Mathlib.Computability.EpsilonNFA
 import Mathlib.Computability.Language
+import Init.Data.Format.Basic
+import Mathlib.Data.Fintype.Basic -- Already implied by EpsilonNFA but good to be explicit
+import Mathlib.Data.Fintype.Pi    -- For Fintype of function types (e.g., step, Set)
+import Mathlib.Data.Fintype.Prod  -- For Fintype of product types (structures)
+import Mathlib.Data.Fintype.Sum   -- For Fintype of sum types (used in St)
+import Mathlib.Data.Fintype.Option -- For Fintype of Option α
 
 /-!
 # Constructing Automata from Regular Expressions
@@ -30,10 +36,24 @@ variable {α : Type u} {σ σ₁ σ₂ : Type v} {P Q : RegularExpression α}
 
 namespace RegularExpression
 
+
+def regExprToString [Repr α] (P : RegularExpression α) : String :=
+  match P with
+  | zero => "0"
+  | epsilon => "ε"
+  | char a => toString (repr a)
+  | plus P Q => s!"({regExprToString P} | {regExprToString Q})"
+  | comp P Q => s!"({regExprToString P} ++ {regExprToString Q})"
+  | star P => s!"({regExprToString P})*"
+
+instance [Repr α] : Repr (RegularExpression α) where
+  reprPrec r _ := regExprToString r
+
 /-- A binary state type representing one initial and one final state -/
 inductive BinSt where
   | ini
   | fin
+deriving Repr, Fintype, DecidableEq
 
 /-- The `εNFA` for `zero` has no transitions. -/
 private def zero_step : Empty → Option α → Set Empty
@@ -103,6 +123,32 @@ def St : RegularExpression α → Type
   | comp P Q => St P ⊕ St Q
   | star P => BinSt ⊕ St P
 
+
+instance [Repr α] {A : RegularExpression α} : Repr (A.St) where
+  reprPrec _ _ := s!"St ({regExprToString A})"
+
+
+@[default_instance]
+private def fintypeSt {α} (A : RegularExpression α) : Fintype (A.St) :=
+  match A with
+  | 0 => inferInstanceAs (Fintype Empty)
+  | 1 => inferInstanceAs (Fintype BinSt)
+  | char _ => inferInstanceAs (Fintype BinSt)
+  | plus P Q =>
+    haveI : Fintype (St P) := fintypeSt P
+    haveI : Fintype (St Q) := fintypeSt Q
+    inferInstanceAs (Fintype (BinSt ⊕ St P ⊕ St Q))
+  | comp P Q =>
+    haveI : Fintype (St P) := fintypeSt P
+    haveI : Fintype (St Q) := fintypeSt Q
+    inferInstanceAs (Fintype (St P ⊕ St Q))
+  | star P =>
+    haveI : Fintype (St P) := fintypeSt P
+    inferInstanceAs (Fintype (BinSt ⊕ St P))
+
+
+instance {A : RegularExpression α} : Fintype (RegularExpression.St A) := fintypeSt A
+
 /-- Construct an `εNFA` from a `RegularExpression` -/
 def toεNFA : (P : RegularExpression α) → εNFA α P.St
   | 0 => ⟨zero_step, zero_start, zero_accept⟩
@@ -111,6 +157,7 @@ def toεNFA : (P : RegularExpression α) → εNFA α P.St
   | P + Q => ⟨plus_step P.toεNFA Q.toεNFA, plus_start, plus_accept⟩
   | comp P Q => ⟨comp_step P.toεNFA Q.toεNFA, comp_start P.toεNFA, comp_accept Q.toεNFA⟩
   | star P => ⟨star_step P.toεNFA, star_start, star_accept⟩
+
 
 private lemma zero_accepts : zero.toεNFA.accepts = (0 : Language α) := by
   simp only [accepts, toεNFA, zero_accept, exists_false, false_and, mem_empty_iff_false]
