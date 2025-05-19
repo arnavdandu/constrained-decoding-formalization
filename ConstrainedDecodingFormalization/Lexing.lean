@@ -136,6 +136,7 @@ noncomputable def BuildLexingFST {P : RE (Ch α)} (A : FSA (Ch α) (Γ × St P))
         if A.step q c = none ∧ A.step q0 c = q' then
           trans' := trans'.insert (q, c, some q', [T])
     trans' := trans'.insert (q, .eos, some q0, [T, .eos])
+
   ⟨alph, oalph, Q, q0, FST.mkStep trans', F'⟩
 
 

@@ -124,7 +124,7 @@ structure εFST (α Γ σ) where
   oalph : List Γ
   states : List σ
   start : σ
-  step : σ → Option α → (Option σ × Γ)
+  step : σ → Option α → (Option σ × List Γ)
   accept : List σ
 
 namespace εFST
