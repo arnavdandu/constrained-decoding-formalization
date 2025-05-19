@@ -14,7 +14,7 @@ import ConstrainedDecodingFormalization.Automata
 import ConstrainedDecodingFormalization.Vocabulary
 import ConstrainedDecodingFormalization.Partition
 
-open Classical List RegularExpression
+open List RegularExpression
 
 universe u v w
 
@@ -114,10 +114,12 @@ noncomputable def PartialLex {P : RE (Ch α)} (specs : LexerSpecs α Γ P) (w : 
      some (Classical.choose h)
    else none
 
+--instance : DecidableEq (Γ × St P) := by apply instDecidableEqProd
+
 /-- Given a lexing automaton `A`, build a character-to-token lexing FST with output over `Γ`
     For the lexing FSA, we'll use the convention that each terminal symbol is attached to an accept state (see Fig. 1) -/
-noncomputable def BuildLexingFST {P : RE (Ch α)} (A : FSA (Ch α) (Γ × St P)) :
-    FST (Ch α) (Ch Γ) (Γ × St P) := Id.run do
+def BuildLexingFST (A : FSA (Ch α) (Γ × σ)) :
+    FST (Ch α) (Ch Γ) (Γ × σ) := Id.run do
   let Q := A.states
   let trans := A.transitions
   let alph := A.alph

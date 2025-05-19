@@ -11,7 +11,7 @@ variable
   {α : Type u} {Γ : Type v} {σ : Type w}
   [DecidableEq α] [DecidableEq σ]
   [Inhabited α] [Inhabited Γ]
-  [Fintype α] [Fintype Γ]
+  [Fintype α] [Fintype Γ] [Fintype σ]
 
 structure FSA (α σ) where
   alph : List α
@@ -23,6 +23,26 @@ structure FSA (α σ) where
 namespace FSA
 
 variable (A : FSA α σ)
+
+instance : DecidableEq (FSA α σ) := fun M N =>
+  let toFun (fsa : FSA α σ) := (fsa.alph, fsa.states, fsa.start, fsa.step, fsa.accept)
+
+  have h₁ : Decidable (toFun M = toFun N) := by
+    simp_all only [Prod.mk.injEq, toFun]
+    exact instDecidableAnd
+
+  have h_inj : ∀ a b : FSA α σ, toFun a = toFun b → a = b := by
+      intro a b h_eq
+      cases a
+      cases b
+      simp only [toFun] at h_eq
+      simp only [mk.injEq]
+      simp_all only [Prod.mk.injEq, and_self, toFun]
+
+  if h : toFun M = toFun N then
+    isTrue (by exact h_inj M N h)
+  else
+    isFalse (by intro hMN; apply h; simp [toFun, hMN])
 
 def transitions (fsa : FSA α σ) : List (σ × α × Option σ) :=
   fsa.states.flatMap (fun q =>
