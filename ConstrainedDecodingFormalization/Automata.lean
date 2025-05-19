@@ -9,9 +9,6 @@ universe u v w y
 
 variable
   {α : Type u} {Γ : Type v} {σ : Type w}
-  [DecidableEq α] [DecidableEq σ]
-  [Inhabited α] [Inhabited Γ]
-  [Fintype α] [Fintype Γ] [Fintype σ]
 
 namespace NFA
 
@@ -29,6 +26,203 @@ structure FSA (α σ) where
 namespace FSA
 
 variable (A : FSA α σ)
+
+def evalFrom (s : σ) (l : List α) : Option σ :=
+  match s, l with
+  | s, [] => s
+  | s, a :: as =>
+    match (A.step s a) with
+    | none => none
+    | some s' => evalFrom s' as
+
+@[simp]
+theorem evalFrom_nil (s : σ) : A.evalFrom s [] = s := rfl
+
+theorem evalFrom_cons (s : σ) (x : α) (xs : List α) (h : (A.step s x).isSome) :
+    A.evalFrom s (x :: xs) = A.evalFrom ((A.step s x).get h) (xs) := by
+  rw [Option.isSome_iff_exists] at h
+  obtain ⟨a, h_s⟩ := h
+  simp_all only [evalFrom, Option.get_some]
+
+theorem evalFrom_none (s : σ) (l : List α) :
+    A.evalFrom s l = none → ∃ (s' : σ) (a : α), A.step s' a = none := by
+  contrapose!
+  intro h
+  induction l generalizing s
+  case nil =>
+    exact Option.isSome_iff_ne_none.mp rfl
+  case cons ih =>
+    expose_names
+    rw [evalFrom_cons]
+    refine ih ((A.step s head).get ?_)
+    exact Option.isSome_iff_ne_none.mpr (h s head)
+
+theorem evalFrom_some (s : σ) (l : List α) :
+    (∀ (s' : σ) (a : α), A.step s' a ≠ none) → (A.evalFrom s l).isSome := by
+  contrapose!
+  simp [evalFrom_none]
+  apply evalFrom_none
+
+def eval : List α → Option σ :=
+  A.evalFrom A.start
+
+def acceptsFrom (s : σ) : Language α :=
+  { w | ∃ f ∈ A.evalFrom s w, f ∈ A.accept }
+
+def accepts : Language α := A.acceptsFrom A.start
+
+theorem mem_accepts {x : List α} (h : (A.eval x).isSome) : x ∈ A.accepts ↔ (A.eval x).get h ∈ A.accept := by
+  constructor
+  ·
+    intro h'
+    unfold accepts acceptsFrom at h'
+    simp at h'
+    obtain ⟨f, hf₁, hf₂⟩ := h'
+    have : (A.eval x).get h = f := by
+      unfold eval at *
+      rw [Option.get_of_mem h hf₁]
+    rwa [this]
+  ·
+    intro ha
+    unfold accepts acceptsFrom
+    simp
+    exists (A.eval x).get h
+    constructor
+    · unfold eval
+      rw [@Option.coe_get]
+    · exact ha
+
+variable [DecidableEq σ]
+
+def toDFA : DFA α (Option σ) :=
+  let step : Option σ → α → Option σ := fun s a =>
+    match s, a with
+    | none, _ => none
+    | some x, a =>
+      match (A.step x a) with
+      | none => none
+      | some s' => s'
+
+  let accept := A.accept.map (fun s => some s)
+
+  ⟨step, A.start, accept.toFinset.toSet⟩
+
+lemma toDFA_none_not_accept : none ∉ A.toDFA.accept := by
+  simp_all [toDFA]
+
+@[simp]
+lemma toDFA_iff_accept : some a ∈ A.toDFA.accept ↔ a ∈ A.accept := by
+  simp_all [toDFA]
+
+@[simp]
+lemma toDFA_none_is_fail : ∀ (a : α), A.toDFA.step none a = none := by
+  exact fun a => rfl
+
+lemma toDFA_step_correct : ∀ (s : σ) (a : α), A.toDFA.step (some s) a = A.step s a := by
+  refine fun s a => ?_
+  simp [toDFA]
+  split <;> rename_i heq <;> exact id (Eq.symm heq)
+
+lemma toDFA_evalFrom_step_cons (s : σ) (x : α) (xs : List α) :
+    A.toDFA.evalFrom (some s) (x :: xs) = A.toDFA.evalFrom (A.toDFA.step s x) (xs) := by
+  simp [DFA.evalFrom]
+
+
+theorem toDFA_evalFrom_correct : ∀ (s : σ) (l : List α), A.toDFA.evalFrom (some s) l = A.evalFrom s l := by
+  refine fun s l => ?_
+  simp [DFA.evalFrom]
+  induction l generalizing s
+  case nil =>
+    unfold List.foldl
+    simp
+  case cons ih =>
+    simp [List.foldl]
+    expose_names
+    cases h : A.step s head
+    ·
+      simp [evalFrom, h, toDFA_step_correct]
+      exact List.foldl_fixed' (congrFun rfl) tail
+    ·
+      simp [evalFrom, h, toDFA_step_correct]
+      apply ih
+
+
+theorem toDFA_correct : A.toDFA.accepts = A.accepts := by
+  ext x
+  simp only [DFA.mem_accepts, mem_accepts]
+
+  have h₀ : A.toDFA.start = some (A.start) := by
+    simp [toDFA]
+
+  cases h : A.eval x
+  case none =>
+    have : A.toDFA.eval x = none := by
+      unfold DFA.eval
+      unfold eval at h
+      simp [h₀, toDFA_evalFrom_correct, h]
+    simp [this]
+
+    simp_all [acceptsFrom, h, eval, accepts]
+    have : none ∉ A.toDFA.accept := by apply toDFA_none_not_accept
+
+    refine (iff_false_right ?_).mpr this
+    refine Not.intro ?_
+    have : ¬(∃ f, A.evalFrom A.start x = some f ∧ f ∈ A.accept) := by
+      push_neg
+      refine fun f => ?_
+      simp [h]
+    exact fun a => this a
+
+  case some => -- When A.eval x = some s
+    have : (A.eval x).isSome := by simp [h]
+    rw [Option.isSome_iff_exists] at this
+    obtain ⟨a, h'⟩ := this
+
+    have : A.toDFA.eval x = a := by
+      unfold DFA.eval
+      simp_all only [Option.some.injEq]
+      subst h
+      unfold eval at h'
+      have : A.toDFA.evalFrom (some A.start) x = A.evalFrom A.start x := by apply toDFA_evalFrom_correct
+      simp [this]
+      exact h'
+
+    simp [this, accepts]
+    simp_all [DFA.eval]
+    constructor
+    rw [←h] at *
+    .
+      intro m
+      simp_all only
+      have : ∃ f, A.evalFrom A.start x = some f ∧ f ∈ A.accept := by
+        constructor
+        unfold eval at h'
+        simp_all only [Option.some.injEq]
+        apply And.intro
+        · exact rfl
+        · simp_all [m, toDFA]
+      exact this
+    .
+      rw [←h] at *
+      intro m
+      rw [h]
+      simp_all [acceptsFrom]
+      have : ∃ f, A.evalFrom A.start x = some f ∧ f ∈ A.accept := by apply m
+      obtain ⟨f, h1, h2⟩ := this
+      unfold eval at h'
+      have : a = f := by
+        simp_all only [Option.some.injEq]
+      simp only [this, h2]
+
+
+
+
+
+
+variable
+  [DecidableEq α]
+  [Inhabited α] [Inhabited Γ]
+  [Fintype α] [Fintype Γ] [Fintype σ]
 
 instance : DecidableEq (FSA α σ) := fun M N =>
   let toProd (fsa : FSA α σ) := (fsa.alph, fsa.states, fsa.start, fsa.step, fsa.accept)
@@ -67,33 +261,10 @@ def mkStep (transitions : List (σ × α × Option σ)) : σ → α → Option �
 def stepList (S : List σ) (a : α) : List (Option σ) :=
   (S.map (fun s => A.step s a)).eraseDups
 
-def evalFrom (s : σ) (l : List α) : Option σ :=
-  match s, l with
-  | s, [] => s
-  | s, a :: as =>
-    match (A.step s a) with
-    | none => none
-    | some s' => evalFrom s' as
-
-def eval : List α → Option σ :=
-  A.evalFrom A.start
-
-def acceptsFrom ( s: σ ) : Language α :=
-  { w | ∃ f ∈ A.evalFrom s w, f ∈ A.accept }
-
-def accepts : Language α := A.acceptsFrom A.start
-
 /-- A word ` w ` is accepted at ` q ` if there is ` q' ` such that ` evalFrom q w = q' `-/
 def accepted (s : σ) (w : List α) : Prop := A.evalFrom s w ≠ none
 
-def toDFA : DFA α (Option σ) :=
-  let step : Option σ → α → Option σ
-    | none, _ => none
-    | some s, a => A.step s a
 
-  let accept := A.accept.map (fun s => some s)
-
-  ⟨step, A.start, accept.toFinset.toSet⟩
 
 def toNFA : NFA α σ where
   step s a := (A.step s a).elim ∅ (fun s => {s})
@@ -102,6 +273,10 @@ def toNFA : NFA α σ where
 
 #check Singleton
 #check Subsingleton
+
+
+
+
 
 omit [DecidableEq α] [Inhabited α] [Fintype α] [Fintype σ]
 @[simp]
@@ -159,11 +334,7 @@ lemma toNFA_evalFrom_Subsingleton (A : FSA α σ) (s : σ) (l : List α) :
 
 
 
-@[simp]
-theorem toNFA_evalFrom_match (M : FSA α σ) (start : σ) (s : List α) :
-    M.toNFA.evalFrom {start} s =
-    (M.evalFrom start s).elim ∅ (fun state => {state}) := by
-  sorry
+
 
 end FSA
 
@@ -176,6 +347,12 @@ structure FST (α Γ σ) where
   accept : List σ
 
 namespace FST
+
+variable
+  (M : FST α Γ σ)
+  [DecidableEq α] [DecidableEq σ]
+  [Inhabited α] [Inhabited Γ]
+  [Fintype α] [Fintype Γ] [Fintype σ]
 
 def transitions (fst : FST α Γ σ) : List (σ × α × (Option σ × List Γ)) :=
   fst.states.flatMap (fun q =>
@@ -190,8 +367,6 @@ def mkStep (transitions : List (σ × α × (Option σ × List Γ))) : σ → α
     transitions.find? (fun (s', a', _) => s = s' && a = a')
     |>.map (fun (_, _, ts) => ts)
     |>.getD (none, [])
-
-variable (M : FST α Γ σ)
 
 def evalFrom (s : σ) (l : List α) : Option σ × List Γ :=
   match s, l with
@@ -227,10 +402,6 @@ namespace εFST
 end εFST
 
 
-instance : Coe (FSA α σ) (NFA α σ) := ⟨fun fsa => {
-  start := {fsa.start}
-  step := fun q a => (FSA.step fsa q a).toFinset
-  accept := (FSA.accept fsa).toFinset
-}⟩
+instance [DecidableEq σ] : Coe (FSA α σ) (NFA α σ) := ⟨fun fsa => fsa.toNFA⟩
 
-instance : Coe (FSA α σ) (DFA α (Set σ)) := ⟨fun fsa => (fsa : NFA α σ).toDFA⟩
+instance [DecidableEq σ] : Coe (FSA α σ) (DFA α (Option σ)) := ⟨fun fsa => fsa.toDFA⟩
