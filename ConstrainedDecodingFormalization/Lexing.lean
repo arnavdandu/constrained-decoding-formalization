@@ -32,6 +32,8 @@ inductive ExtChar (α : Type u)
 | eos  : ExtChar α
 deriving DecidableEq, Repr
 
+instance {α} : Coe (α) (ExtChar α) := ⟨fun a => ExtChar.char a⟩
+
 abbrev Ch := ExtChar
 
 variable (P : RE (Ch α))
@@ -43,7 +45,6 @@ structure Terminal (α : Type u) (Γ : Type v)  where
 deriving Repr
 
 def LexingFSA := P.toεNFA.toNFA
-
 
 @[ext]
 structure Token (α : Type u) (Γ : Type v) where
@@ -76,18 +77,17 @@ def isPrefix (specs : List (LexerSpecification α Γ σ)) (xs : List α) : Prop 
     let nfa : NFA α σ := s.automaton
     ∃ ys, nfa.accepts (xs ++ ys)
 
-abbrev LexerSpecs (α) (Γ) (P : RE (Ch α)) := List (LexerSpecification (Ch α) (Terminal (Ch α) (Ch Γ)) (St P))
 
-inductive LexRel (P : RE (Ch α)) (specs : LexerSpecs α Γ P) :
+inductive LexRel (specs : List (LexerSpecification (Ch α) Γ σ)) :
     List (Ch α) → List (Ch Γ) → List (Ch α) → Prop
   | empty :
-      LexRel P specs [] [] []
+      LexRel specs [] [] []
 
   -- When the next character is EOS, and wr recognizes a token
   | done {wr ws ts tj} :
-      LexRel P specs ws ts wr →
+      LexRel specs ws ts wr →
       isToken specs wr = some tj →
-      LexRel P specs (ws ++ [.eos]) (ts ++ [tj.symbol]) []
+      LexRel specs (ws ++ [.eos]) (ts ++ [.char tj]) []
 
   -- When next character is NOT EOS:
   -- (emit) If wr ∈ L(A^j) but (wr ++ c) is no longer a prefix of any token
@@ -95,22 +95,22 @@ inductive LexRel (P : RE (Ch α)) (specs : LexerSpecs α Γ P) :
       c ≠ .eos →
       isToken specs wr = some tj →
       ¬ isPrefix specs (wr ++ [c]) →
-      LexRel P specs (c :: cs) T [] →
-      LexRel P specs (wr ++ c :: cs) (tj.symbol :: T) wr
+      LexRel specs (c :: cs) T [] →
+      LexRel specs (wr ++ c :: cs) (tj :: T) wr
 
   -- (extend) If (wr ++ c) is still a valid prefix of some token
   | extend {wr c cs T} :
       c ≠ .eos →
       isPrefix specs (wr ++ [c]) →
-      LexRel P specs cs T (wr ++ [c]) →
-      LexRel P specs (c :: cs) T wr
+      LexRel specs cs T (wr ++ [c]) →
+      LexRel specs (c :: cs) T wr
 
 def Lexer (α : Type u) (Γ : Type v) := List α -> Option (List Γ × List α)
 
-noncomputable def PartialLex {P : RE (Ch α)} (specs : LexerSpecs α Γ P) (w : List (Ch α)) :
+noncomputable def PartialLex (specs :  List (LexerSpecification (Ch α) Γ σ)) (w : List (Ch α)) :
     Option (List (Ch Γ) × List (Ch α)) :=
   letI := Classical.propDecidable
-   if h : ∃ out : List (Ch Γ) × List (Ch α), LexRel P specs w out.1 out.2 then
+   if h : ∃ out : List (Ch Γ) × List (Ch α), LexRel specs w out.1 out.2 then
      some (Classical.choose h)
    else none
 
@@ -142,14 +142,13 @@ def BuildLexingFST (A : FSA (Ch α) (Γ × σ)) :
   ⟨alph, oalph, Q, q0, FST.mkStep trans', F'⟩
 
 
-def PartialLexSplit (P : RE (Ch α))
-    (specs : LexerSpecs α Γ P) (w : List (Ch α)) :
+def PartialLexSplit (specs : List (LexerSpecification (Ch α) Γ σ)) (w : List (Ch α)) :
     match PartialLex specs (w ++ [.eos]) with
     | some (tokens, unlexed) =>
       -- exists a partition corresponding to the output of partial lex
       unlexed = [] ∧
       ∃ p, IsPartition p w ∧ p.length = tokens.length ∧
-        ∀ t ∈ (List.zip tokens p), ∃ spec ∈ specs, t.fst = spec.term_sym.symbol ∧ t.snd ∈ spec.automaton.accepts
+        ∀ t ∈ (List.zip tokens p), ∃ spec ∈ specs, t.fst = spec.term_sym ∧ t.snd ∈ spec.automaton.accepts
     | none =>
       -- there is no possible partitions in which we can lex it
       ∀ p, IsPartition p w → ∃ x ∈ p, ∀ lexer ∈ specs, x ∉ lexer.automaton.accepts

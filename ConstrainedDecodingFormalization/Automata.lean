@@ -13,6 +13,12 @@ variable
   [Inhabited α] [Inhabited Γ]
   [Fintype α] [Fintype Γ] [Fintype σ]
 
+namespace NFA
+
+
+
+end NFA
+
 structure FSA (α σ) where
   alph : List α
   states : List σ
@@ -25,24 +31,24 @@ namespace FSA
 variable (A : FSA α σ)
 
 instance : DecidableEq (FSA α σ) := fun M N =>
-  let toFun (fsa : FSA α σ) := (fsa.alph, fsa.states, fsa.start, fsa.step, fsa.accept)
+  let toProd (fsa : FSA α σ) := (fsa.alph, fsa.states, fsa.start, fsa.step, fsa.accept)
 
-  have h₁ : Decidable (toFun M = toFun N) := by
-    simp_all only [Prod.mk.injEq, toFun]
+  have h₁ : Decidable (toProd M = toProd N) := by
+    simp_all only [Prod.mk.injEq, toProd]
     exact instDecidableAnd
 
-  have h_inj : ∀ a b : FSA α σ, toFun a = toFun b → a = b := by
-      intro a b h_eq
-      cases a
-      cases b
-      simp only [toFun] at h_eq
-      simp only [mk.injEq]
-      simp_all only [Prod.mk.injEq, and_self, toFun]
+  have h_inj : ∀ a b : FSA α σ, toProd a = toProd b → a = b := by
+    intro a b h_eq
+    cases a
+    cases b
+    simp [toProd] at h_eq
+    simp [mk.injEq]
+    simp_all [Prod.mk.injEq, and_self, toProd]
 
-  if h : toFun M = toFun N then
+  if h : toProd M = toProd N then
     isTrue (by exact h_inj M N h)
   else
-    isFalse (by intro hMN; apply h; simp [toFun, hMN])
+    isFalse (by intro hMN; apply h; simp [toProd, hMN])
 
 def transitions (fsa : FSA α σ) : List (σ × α × Option σ) :=
   fsa.states.flatMap (fun q =>
@@ -89,7 +95,75 @@ def toDFA : DFA α (Option σ) :=
 
   ⟨step, A.start, accept.toFinset.toSet⟩
 
+def toNFA : NFA α σ where
+  step s a := (A.step s a).elim ∅ (fun s => {s})
+  start := {A.start}
+  accept := A.accept.toFinset
 
+#check Singleton
+#check Subsingleton
+
+omit [DecidableEq α] [Inhabited α] [Fintype α] [Fintype σ]
+@[simp]
+lemma toNFA_step_Subsingleton (A : FSA α σ) (s : σ) (a : α) :
+    Subsingleton (A.toNFA.step s a) := by
+  simp [toNFA, Option.elim]
+  split
+  simp_all
+  exact Set.subsingleton_empty
+
+lemma toNFA_evalFrom_step_cons (s : σ) (x : α) (xs : List α) :
+    A.toNFA.evalFrom {s} (x :: xs) = A.toNFA.evalFrom (A.toNFA.step s x) (xs) := by
+  simp [NFA.evalFrom, NFA.stepSet]
+
+lemma toNFA_evalFrom_step_cons_empty (x : α) (xs : List α) :
+    A.toNFA.evalFrom ∅ (x :: xs) = A.toNFA.evalFrom ∅ (xs) := by
+  simp [NFA.evalFrom, NFA.stepSet]
+
+lemma toNFA_evalFrom_empty (x : List α) :
+    A.toNFA.evalFrom ∅ x = ∅ := by
+  simp [NFA.evalFrom]
+  rw [List.foldl.eq_def]
+  split; rfl
+  expose_names
+  induction l
+  case nil =>
+    rw [←NFA.evalFrom]
+    simp [NFA.evalFrom_nil]
+  case cons ih =>
+    rw [←NFA.evalFrom] at *
+    simp_all [NFA.evalFrom_nil, toNFA_evalFrom_step_cons_empty]
+
+lemma toNFA_evalFrom_Subsingleton (A : FSA α σ) (s : σ) (l : List α) :
+    Subsingleton (A.toNFA.evalFrom {s} l) := by
+  have h : ∀ (S : Set σ), A.toNFA.evalFrom S [] = S := by exact (fun S => rfl)
+  induction l generalizing s
+  case nil =>
+    rw [h {s}]
+    exact Unique.instSubsingleton
+  case cons a as ih =>
+    simp_all only [NFA.evalFrom_nil, implies_true]
+    rw [toNFA_evalFrom_step_cons]
+    have h₁ : ∀ (c : α) (s : σ), A.toNFA.step s c = (A.step s c).elim ∅ (fun s => {s}) := by intro c; exact fun s => rfl
+    rw [h₁]
+    simp only [Option.elim]
+    split
+    dsimp
+    apply ih _
+    simp only [NFA.evalFrom, NFA.stepSet, NFA.stepSet_empty]
+    rw [List.foldl.eq_def]
+    split
+    exact IsEmpty.instSubsingleton
+    rw [←NFA.evalFrom]
+    simp [NFA.stepSet_empty, toNFA_evalFrom_empty]
+
+
+
+@[simp]
+theorem toNFA_evalFrom_match (M : FSA α σ) (start : σ) (s : List α) :
+    M.toNFA.evalFrom {start} s =
+    (M.evalFrom start s).elim ∅ (fun state => {state}) := by
+  sorry
 
 end FSA
 
