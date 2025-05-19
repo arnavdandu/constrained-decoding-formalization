@@ -23,6 +23,7 @@ abbrev RE := RegularExpression
 variable
   {α : Type u} {Γ : Type v} {σ : Type w}
   [DecidableEq α] [DecidableEq σ] [DecidableEq Γ]
+  [BEq α] [BEq σ] [LawfulBEq σ] [LawfulBEq α]
   [Inhabited α] [Inhabited Γ]
   [Fintype α] [Fintype σ] [Fintype Γ]
 
@@ -64,18 +65,14 @@ structure LexerSpecification (α Γ σ) where
   term_sym : Γ
 
 -- A recognizer for a token: returns true if the input is a valid token
-noncomputable def isToken (specs : List (LexerSpecification α Γ σ)) (xs : List α) : Option Γ :=
-  letI := Classical.propDecidable
+def isToken (specs : List (LexerSpecification α Γ σ)) (xs : List α) : Option Γ :=
+  --letI := Classical.propDecidable
   specs.findSome? fun s =>
-    let nfa : NFA α σ := s.automaton
-    if nfa.accepts xs then some s.term_sym else none
+    if xs ∈ s.automaton.accepts then some s.term_sym else none
 
 -- A predicate for prefix of any token
 def isPrefix (specs : List (LexerSpecification α Γ σ)) (xs : List α) : Prop :=
-  letI := Classical.propDecidable
-  specs.any fun s =>
-    let nfa : NFA α σ := s.automaton
-    ∃ ys, nfa.accepts (xs ++ ys)
+  ∃ s ∈ specs, FSA.isPrefix s.automaton xs
 
 
 inductive LexRel (specs : List (LexerSpecification (Ch α) Γ σ)) :

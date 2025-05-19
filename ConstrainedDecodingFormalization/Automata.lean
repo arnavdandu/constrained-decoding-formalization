@@ -10,11 +10,7 @@ universe u v w y
 variable
   {α : Type u} {Γ : Type v} {σ : Type w}
 
-namespace NFA
 
-
-
-end NFA
 
 structure FSA (α σ) where
   alph : List α
@@ -71,6 +67,11 @@ def acceptsFrom (s : σ) : Language α :=
 
 def accepts : Language α := A.acceptsFrom A.start
 
+def prefixLanguage : Language α :=
+  {x | ∃ y ∈ A.accepts, x ++ y ∈ A.accepts }
+
+def isPrefix (w : List α) : Prop := w ∈ A.prefixLanguage
+
 theorem mem_accepts {x : List α} (h : (A.eval x).isSome) : x ∈ A.accepts ↔ (A.eval x).get h ∈ A.accept := by
   constructor
   ·
@@ -92,7 +93,32 @@ theorem mem_accepts {x : List α} (h : (A.eval x).isSome) : x ∈ A.accepts ↔ 
       rw [@Option.coe_get]
     · exact ha
 
+
+
 variable [DecidableEq σ]
+
+instance (l : List α) : Decidable ( (A.eval l).isSome ) := inferInstance
+
+instance [BEq σ] [LawfulBEq σ] (l : List α) {h : (A.eval l).isSome} :
+  Decidable ((A.eval l).get h ∈ A.accept) :=
+  List.instDecidableMemOfLawfulBEq ((A.eval l).get h) A.accept
+
+instance [BEq σ] [LawfulBEq σ] (l : List α) : Decidable (l ∈ A.accepts) :=
+  if h : (A.eval l).isSome then
+    let s := (A.eval l).get h
+    if h2 : s ∈ A.accept then
+      isTrue ((mem_accepts A h).mpr h2)
+    else
+      isFalse ((mem_accepts A h).not.mpr h2)
+  else
+    isFalse (by
+      intro h_contra
+      simp [accepts, acceptsFrom, eval] at h_contra
+      cases h_contra with
+      | intro f hf =>
+        have : (A.eval l).isSome := Option.isSome_iff_exists.mpr ⟨f, hf.1⟩
+        contradiction
+    )
 
 def toDFA : DFA α (Option σ) :=
   let step : Option σ → α → Option σ := fun s a =>
@@ -213,11 +239,6 @@ theorem toDFA_correct : A.toDFA.accepts = A.accepts := by
       have : a = f := by
         simp_all only [Option.some.injEq]
       simp only [this, h2]
-
-
-
-
-
 
 variable
   [DecidableEq α]
