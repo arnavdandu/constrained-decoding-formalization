@@ -104,6 +104,7 @@ inductive LexRel (specs : List (LexerSpecification (Ch α) Γ σ)) :
 
 def Lexer (α : Type u) (Γ : Type v) := List α -> Option (List Γ × List α)
 
+-- Retain the noncomputable version for proofs
 noncomputable def PartialLex (specs :  List (LexerSpecification (Ch α) Γ σ)) (w : List (Ch α)) :
     Option (List (Ch Γ) × List (Ch α)) :=
   letI := Classical.propDecidable

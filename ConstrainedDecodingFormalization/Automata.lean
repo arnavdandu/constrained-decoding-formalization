@@ -31,6 +31,7 @@ def evalFrom (s : σ) (l : List α) : Option σ :=
     | none => none
     | some s' => evalFrom s' as
 
+
 @[simp]
 theorem evalFrom_nil (s : σ) : A.evalFrom s [] = s := rfl
 
@@ -67,6 +68,8 @@ def acceptsFrom (s : σ) : Language α :=
 
 def accepts : Language α := A.acceptsFrom A.start
 
+
+
 def prefixLanguage : Language α :=
   {x | ∃ y ∈ A.accepts, x ++ y ∈ A.accepts }
 
@@ -94,7 +97,6 @@ theorem mem_accepts {x : List α} (h : (A.eval x).isSome) : x ∈ A.accepts ↔ 
     · exact ha
 
 
-
 variable [DecidableEq σ]
 
 instance (l : List α) : Decidable ( (A.eval l).isSome ) := inferInstance
@@ -119,6 +121,10 @@ instance [BEq σ] [LawfulBEq σ] (l : List α) : Decidable (l ∈ A.accepts) :=
         have : (A.eval l).isSome := Option.isSome_iff_exists.mpr ⟨f, hf.1⟩
         contradiction
     )
+
+
+--instance [BEq σ] [LawfulBEq σ] (l : List α) : Decidable (l ∈ A.prefixLanguage) :=
+  --sorry
 
 def toDFA : DFA α (Option σ) :=
   let step : Option σ → α → Option σ := fun s a =>
@@ -176,69 +182,38 @@ theorem toDFA_evalFrom_correct : ∀ (s : σ) (l : List α), A.toDFA.evalFrom (s
 theorem toDFA_correct : A.toDFA.accepts = A.accepts := by
   ext x
   simp only [DFA.mem_accepts, mem_accepts]
-
-  have h₀ : A.toDFA.start = some (A.start) := by
-    simp [toDFA]
-
+  have h₀ : A.toDFA.start = some (A.start) := by simp [toDFA]
   cases h : A.eval x
-  case none =>
-    have : A.toDFA.eval x = none := by
-      unfold DFA.eval
-      unfold eval at h
-      simp [h₀, toDFA_evalFrom_correct, h]
-    simp [this]
-
+  .
+    have : A.toDFA.eval x = none := by simp_all [eval, DFA.eval, h₀, toDFA_evalFrom_correct, h]
     simp_all [acceptsFrom, h, eval, accepts]
-    have : none ∉ A.toDFA.accept := by apply toDFA_none_not_accept
-
-    refine (iff_false_right ?_).mpr this
-    refine Not.intro ?_
+    refine (iff_false_right ?_).mpr (by apply toDFA_none_not_accept)
     have : ¬(∃ f, A.evalFrom A.start x = some f ∧ f ∈ A.accept) := by
       push_neg
       refine fun f => ?_
       simp [h]
     exact fun a => this a
-
-  case some => -- When A.eval x = some s
+  .
     have : (A.eval x).isSome := by simp [h]
     rw [Option.isSome_iff_exists] at this
     obtain ⟨a, h'⟩ := this
-
     have : A.toDFA.eval x = a := by
-      unfold DFA.eval
-      simp_all only [Option.some.injEq]
-      subst h
-      unfold eval at h'
-      have : A.toDFA.evalFrom (some A.start) x = A.evalFrom A.start x := by apply toDFA_evalFrom_correct
-      simp [this]
-      exact h'
-
-    simp [this, accepts]
-    simp_all [DFA.eval]
-    constructor
-    rw [←h] at *
+      have : A.toDFA.evalFrom (some A.start) x = A.evalFrom A.start x :=
+        by apply toDFA_evalFrom_correct
+      simp_all only [h, DFA.eval, Option.some.injEq, eval, this, h']
+    simp_all [this, accept, DFA.eval]
+    constructor <;> rw [←h] at * <;> intro m
     .
-      intro m
-      simp_all only
       have : ∃ f, A.evalFrom A.start x = some f ∧ f ∈ A.accept := by
-        constructor
-        unfold eval at h'
-        simp_all only [Option.some.injEq]
+        constructor <;> simp_all only [eval, Option.some.injEq]
         apply And.intro
         · exact rfl
         · simp_all [m, toDFA]
       exact this
     .
-      rw [←h] at *
-      intro m
-      rw [h]
-      simp_all [acceptsFrom]
       have : ∃ f, A.evalFrom A.start x = some f ∧ f ∈ A.accept := by apply m
       obtain ⟨f, h1, h2⟩ := this
-      unfold eval at h'
-      have : a = f := by
-        simp_all only [Option.some.injEq]
-      simp only [this, h2]
+      simp_all only [Option.some.injEq, eval, this, h2]
 
 variable
   [DecidableEq α]
