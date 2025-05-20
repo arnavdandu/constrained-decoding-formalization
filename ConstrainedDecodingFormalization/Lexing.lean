@@ -70,7 +70,7 @@ def isToken (specs : List (LexerSpecification α Γ σ)) (xs : List α) : Option
   specs.findSome? fun s =>
     if xs ∈ s.automaton.accepts then some s.term_sym else none
 
--- A predicate for prefix of any token
+-- A predicate for prefix of any token (Note: decidability not proven yet. Will probably need to do something similar as acceptance decidability.)
 def isPrefix (specs : List (LexerSpecification α Γ σ)) (xs : List α) : Prop :=
   ∃ s ∈ specs, FSA.isPrefix s.automaton xs
 
