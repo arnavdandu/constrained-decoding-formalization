@@ -27,7 +27,7 @@ variable
   [Inhabited α] [Inhabited Γ]
   [Fintype α] [Fintype σ] [Fintype Γ]
 
-
+/-- Extend character alphabet with EOS symbol-/
 inductive ExtChar (α : Type u)
 | char : α → ExtChar α
 | eos  : ExtChar α
@@ -46,18 +46,6 @@ structure Terminal (α : Type u) (Γ : Type v)  where
 deriving Repr
 
 def LexingFSA := P.toεNFA.toNFA
-
-@[ext]
-structure Token (α : Type u) (Γ : Type v) where
-  symbol : Γ
-  string : List α
-deriving Repr, DecidableEq
-
-def List.terminalSymbols (terminals : List (Terminal α Γ)) : List Γ :=
-  terminals.map (fun t => t.symbol)
-
-def List.sequence {α : Type u} (tokens : List (Token α Γ)) : List Γ :=
-  tokens.map (fun t => t.symbol)
 
 
 structure LexerSpecification (α Γ σ) where
@@ -116,26 +104,30 @@ noncomputable def PartialLex (specs :  List (LexerSpecification (Ch α) Γ σ)) 
 
 /-- Given a lexing automaton `A`, build a character-to-token lexing FST with output over `Γ`
     For the lexing FSA, we'll use the convention that each terminal symbol is attached to an accept state (see Fig. 1) -/
-def BuildLexingFST (A : FSA (Ch α) (Γ × σ)) :
-    FST (Ch α) (Ch Γ) (Γ × σ) := Id.run do
+def BuildLexingFST (A : FSA (Ch α) (Ch Γ × σ)) :
+    FST (Ch α) (Ch Γ) (Ch Γ × σ) := Id.run do
   let Q := A.states
   let trans := A.transitions
   let alph := A.alph
   let q0 := A.start
   let F := A.accept
 
-  let oalph := (F.map (fun (x, _) => .char x)).eraseDups.filter (fun c => c ≠ .eos)
+  let oalph := (F.map (fun (x, _) => x)).eraseDups.filter (fun c => c ≠ .eos)
 
   let F' := [q0]
-  let mut trans' := trans.map (fun (q, c, q') => (q, c, q', ([] : List (Ch Γ))))
+  let mut trans' := trans.map (fun (q, c, s) =>
+    match s with
+    | none => (q, c, none)
+    | some q' => (q, c, (q', ([] : List (Ch Γ))))
+  )
 
   for q in F do
-    let T := .char q.1
+    let T := q.1
     for c in alph do
       for q' in Q do
         if A.step q c = none ∧ A.step q0 c = q' then
-          trans' := trans'.insert (q, c, some q', [T])
-    trans' := trans'.insert (q, .eos, some q0, [T, .eos])
+          trans' := trans'.insert (q, c, some (q', [T]))
+    trans' := trans'.insert (q, .eos, some (q0, [T, .eos]))
 
   ⟨alph, oalph, Q, q0, FST.mkStep trans', F'⟩
 
@@ -168,6 +160,7 @@ def LexingFST_eq_PartialLex := 0
 def soundnessLemma := 0
 def completenessLemma := 0
 
+/-
 #check RegularExpression (Ch Char)
 
 def mkchar {α : Type u} (x : α) : ExtChar α := ExtChar.char x
@@ -186,6 +179,9 @@ def test_re : RE (Ch Char) :=
 #eval (test_re)
 #eval [mkchar 'a', mkchar 'c'] ∈ (test_re).matches'
 #eval [mkchar 'a', mkchar 'b', mkchar 'b', mkchar 'b'] ∈ (test_re).matches'
+-/
+
+
 
 
 
