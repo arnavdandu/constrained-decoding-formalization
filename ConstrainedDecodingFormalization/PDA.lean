@@ -1,43 +1,44 @@
 import Mathlib.Computability.Language
+import Mathlib.Data.Set.Basic
 import Mathlib.Computability.ContextFreeGrammar
 import ConstrainedDecodingFormalization.CFG
 
 -- helpers related to prefixes
 section PrefixHelper
 
-variable { α } 
-open List 
+variable { α }
+open List
 
 theorem isPrefix_merge [ BEq α ] [ LawfulBEq α] ( xs ys zs : List α ) (h : ys <+: zs) :
       match xs.isPrefixOf? ys with
       | some rem => xs.isPrefixOf? zs = rem ++ zs.drop ys.length
       | none => True
   := by
-  split 
+  split
   case h_2 => constructor
-  case h_1 rem heq => 
+  case h_1 rem heq =>
     have y_x_rem : xs ++ rem = ys := List.append_eq_of_isPrefixOf?_eq_some heq
     have x_p_y : xs <+: ys := Exists.intro rem y_x_rem
     have x_isp_z : xs.isPrefixOf zs := List.isPrefixOf_iff_prefix.mpr (List.IsPrefix.trans x_p_y h)
-    cases h_xs_isp?_zs : xs.isPrefixOf? zs with 
-    | some rem' => 
+    cases h_xs_isp?_zs : xs.isPrefixOf? zs with
+    | some rem' =>
       have xs_rem'_zs := List.append_eq_of_isPrefixOf?_eq_some h_xs_isp?_zs
       have xs_rem_ys : ys ++ zs.drop ys.length = zs := List.prefix_iff_eq_append.mp h
-      conv at xs_rem_ys => 
-        lhs 
-        lhs 
+      conv at xs_rem_ys =>
+        lhs
+        lhs
         rw[←y_x_rem]
-      rw[←xs_rem_ys] at xs_rem'_zs 
+      rw[←xs_rem_ys] at xs_rem'_zs
       simp at xs_rem'_zs
-      simp 
+      simp
       assumption
-    | none => 
+    | none =>
       have true : (xs.isPrefixOf? zs).isSome = true := by
         rw[(List.isSome_isPrefixOf?_eq_isPrefixOf xs zs)]
         assumption
-      have false : (xs.isPrefixOf? zs).isSome = false := by 
+      have false : (xs.isPrefixOf? zs).isSome = false := by
         rw[h_xs_isp?_zs]
-        apply Option.isSome_none 
+        apply Option.isSome_none
       simp_all
 
 end PrefixHelper
@@ -91,7 +92,7 @@ theorem fullStep_stackInvariance [ LawfulBEq π  ] : ∀ s st st' t, st <+: st' 
     rename_i top_pfx_st
     simp at heq
     simp[←heq]
-    have partition := isPrefix_merge top st st' pfx 
+    have partition := isPrefix_merge top st st' pfx
     simp only [top_pfx_st] at partition
     simp[partition]
   | none =>
@@ -142,20 +143,22 @@ def pruned : Prop :=
 def toFSA : FSA Γ σ :=
   FSA.mk P.alph P.states P.start
     (fun st a => match P.step st a with
-      | some (_, _, dst) => [dst]
-      | none => [])
+      | some (_, _, dst) => some dst
+      | none => none)
     P.accept
 
-lemma fullStep_stepList [DecidableEq σ] :
+-- refactor this lemma so that it matches
+-- evalFrom instead of stepList
+lemma fullStep_evalFrom [DecidableEq σ] :
   ∀ s st t,
-    if let some (s', _) := P.fullStep (some (s, st)) t then
-      P.toFSA.stepList [s] t = [s']
-    else
-      True := by
+    match P.fullStep (some (s, st)) t with
+    | some (s', _) => P.toFSA.step s t = some s'
+    | none => True
+  := by
   intro s st t
   split
-  case h_2 => simp
-  simp [PDA.toFSA, FSA.stepList]
+  case h_2 heq => constructor
+  simp [PDA.toFSA, FSA.evalFrom]
   rename_i heq
   simp [PDA.fullStep] at heq
   split
@@ -163,14 +166,14 @@ lemma fullStep_stepList [DecidableEq σ] :
     simp [heq'] at heq
     split at heq <;> try contradiction
     simp_all
-    rfl
   case h_1.h_2 heq' =>
     simp [heq'] at heq
+
 
 lemma overApproximationLemma [DecidableEq σ] :
   ∀ w dst' s st,
     P.evalFrom (some (s, st)) w = some dst' →
-    P.toFSA.evalFrom s w = [dst'.fst] := by
+    P.toFSA.evalFrom s w = some dst'.fst := by
   intro w dst' s st h
   induction w generalizing dst' s st
   case nil =>
@@ -179,15 +182,18 @@ lemma overApproximationLemma [DecidableEq σ] :
     simp [←h]
   case cons head tail ih =>
     simp only [PDA.evalFrom_cons] at h
+
     generalize h1 : P.fullStep (some (s, st)) head = trans at h
     cases trans with
     | none =>
       simp at h
     | some next =>
       have ih' := ih _ _ _ h
-      have := P.fullStep_stepList s st head
-      simp [h1] at this
       simp_all [FSA.evalFrom]
+      generalize h2p : P.toFSA.step s head = u at *
+      have := P.fullStep_evalFrom s st head
+      simp_all
+
 
 theorem overApproximation [DecidableEq σ] :
   ∀ w s st, w ∉ P.toFSA.acceptsFrom s → w ∉ P.acceptsFrom s st := by
@@ -269,22 +275,57 @@ theorem acceptEmptyStk_acceptAll [ LawfulBEq π ] : ∀ w s st,
   apply stackInvariance
   simp
 
+
+lemma evalFull_append :
+  ∀ w x, P.evalFull (w ++ x) = P.evalFrom (P.evalFull w) x := by
+  intro w x
+  simp[evalFull, evalFrom]
+
 theorem pruned_intermediate_eq_prefix ( h : P.pruned ) :
-  P.intermediate = P.accepts.prefixes :=
-  sorry
-
--- builds parser from cfg
-def CFGStackAlphabet := Nat
-def CFGState := Nat
-variable [ BEq CFGStackAlphabet ]
-def fromCFG ( C : ContextFreeGrammar Γ ) : PDA Γ CFGStackAlphabet CFGState :=
-  sorry
-
--- build is correct
-theorem fromCFGCorrect ( C: ContextFreeGrammar Γ ) :
-  C.language = (fromCFG C).accepts := sorry
-
-theorem fromCFGPruned ( C: ContextFreeGrammar Γ ) :
-  (fromCFG C).pruned := sorry
+  P.intermediate = P.accepts.prefixes := by
+  simp[pruned, evalFull] at h
+  apply Set.ext
+  intro x
+  apply Iff.intro
+  case mp =>
+    intro h_x
+    simp[intermediate] at h_x
+    cases h' : P.evalFrom (some (P.start, [])) x with
+    | some sp'  =>
+      have (s', st') := sp'
+      have ⟨fin, hfin⟩ := h s' st' x h'
+      simp[acceptsFrom] at hfin
+      obtain ⟨s'', ⟨⟨st'', h2⟩, s''_acc⟩⟩ := hfin
+      -- so then x ++ hfin is in accepts
+      have := P.evalFull_append x fin
+      simp[evalFull, h', h2] at this
+      have acc : (x ++ fin) ∈ P.accepts := by
+        simp_all[accepts, acceptsFrom]
+        exists s''
+        apply And.intro
+        exists st''
+        exact s''_acc
+      have pfx : x <+: (x ++ fin) := by simp
+      simp[Language.prefixes]
+      exists (x ++ fin)
+    | none =>
+      simp[eval] at h_x
+      contradiction
+  case mpr =>
+    intro h_x
+    simp[Language.prefixes] at h_x
+    simp[intermediate, eval]
+    cases h' : P.evalFrom (some (P.start, [])) x with
+    | some x =>
+      simp
+    | none =>
+      obtain ⟨fin, ⟨fin_acc, x_pfx_fin⟩⟩ := h_x
+      simp[accepts, acceptsFrom] at fin_acc
+      obtain ⟨s'', ⟨⟨st'', h2⟩, s''_acc⟩⟩ := fin_acc
+      obtain ⟨tail, htail⟩ := x_pfx_fin
+      have := P.evalFull_append x tail
+      simp[evalFull, h', htail] at this
+      rw[this] at h2
+      contradiction
 
 end PDA

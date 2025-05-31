@@ -118,6 +118,7 @@ noncomputable def PartialLex (specs :  List (LexerSpecification (Ch α) Γ σ)) 
     For the lexing FSA, we'll use the convention that each terminal symbol is attached to an accept state (see Fig. 1) -/
 def BuildLexingFST (A : FSA (Ch α) (Γ × σ)) :
     FST (Ch α) (Ch Γ) (Γ × σ) := Id.run do
+  /-
   let Q := A.states
   let trans := A.transitions
   let alph := A.alph
@@ -138,6 +139,8 @@ def BuildLexingFST (A : FSA (Ch α) (Γ × σ)) :
     trans' := trans'.insert (q, .eos, some q0, [T, .eos])
 
   ⟨alph, oalph, Q, q0, FST.mkStep trans', F'⟩
+  -/
+  sorry
 
 
 def PartialLexSplit (specs : List (LexerSpecification (Ch α) Γ σ)) (w : List (Ch α)) :
