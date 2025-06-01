@@ -296,7 +296,7 @@ theorem pruned_intermediate_eq_prefix ( h : P.pruned ) :
       have ⟨fin, hfin⟩ := h s' st' x h'
       simp[acceptsFrom] at hfin
       obtain ⟨s'', ⟨⟨st'', h2⟩, s''_acc⟩⟩ := hfin
-      -- so then x ++ hfin is in accepts
+      -- so then x ++ fin is in accepts
       have := P.evalFull_append x fin
       simp[evalFull, h', h2] at this
       have acc : (x ++ fin) ∈ P.accepts := by

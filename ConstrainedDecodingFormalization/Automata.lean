@@ -330,8 +330,6 @@ lemma toNFA_evalFrom_Subsingleton (A : FSA α σ) (s : σ) (l : List α) :
 end FSA
 
 structure FST (α Γ σ) where
-  alph : List α
-  oalph : List Γ
   states : List σ
   start : σ
   step : σ → α → Option (σ × List Γ)
@@ -473,7 +471,7 @@ def compose {β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST
     match s, a with
     | (s₁, s₂), a => compose_fun_step M₁ M₂ s₁ s₂ a
 
-  ⟨M₁.alph, M₂.oalph, states, start, step, accept⟩
+  ⟨states, start, step, accept⟩
 
 def compose_fun_evalFrom { β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (s₁ : σ) (s₂ : τ) (w : List α) : Option ((σ × τ) × List β) :=
   match M₁.evalFrom s₁ w with

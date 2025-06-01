@@ -30,9 +30,8 @@ def ComputeValidTokenMask (P : PDA Γ π σ) (itst : List Γ → σ0 → (List (
 
   accepted.dedup
 
--- if in compute valid token mask, parser would accept it
--- we want something a bit stronger than this, basically having to do with the
--- assumption about all terminal sequences being realizable
+-- we want to say that accepted if and only if
+-- theres a realizable sequence that's accepted
 theorem accept_if_ComputedValidTokenMask (P : PDA Γ π σ) (fst_comp : FSTComp α Γ σ0) :
   ∀ st qa qp v,
     v ∈ (ComputeValidTokenMask P (BuildInverseTokenSpannerTable fst_comp).snd (PreprocessParser fst_comp P) qa qp st) →
