@@ -116,31 +116,26 @@ noncomputable def PartialLex (specs :  List (LexerSpecification (Ch α) Γ σ)) 
 
 /-- Given a lexing automaton `A`, build a character-to-token lexing FST with output over `Γ`
     For the lexing FSA, we'll use the convention that each terminal symbol is attached to an accept state (see Fig. 1) -/
-def BuildLexingFST (A : FSA (Ch α) (Γ × σ)) :
-    FST (Ch α) (Ch Γ) (Γ × σ) := Id.run do
-  /-
+def BuildLexingFST (A : FSA α σ) (term: σ → Option Γ) (hterm: ∀ s, s ∈ A.accept ↔ term s ≠ none) :
+    FST (Ch α) (Ch Γ) σ := Id.run do
   let Q := A.states
   let trans := A.transitions
   let alph := A.alph
   let q0 := A.start
   let F := A.accept
 
-  let oalph := (F.map (fun (x, _) => .char x)).eraseDups.filter (fun c => c ≠ .eos)
-
   let F' := [q0]
-  let mut trans' := trans.map (fun (q, c, q') => (q, c, q', ([] : List (Ch Γ))))
+  let mut trans' : List (σ × Ch α × σ × List (Ch Γ)) := trans.map (fun (q, c, q') => (q, ExtChar.char c, q', [] ))
 
-  for q in F do
-    let T := .char q.1
+  for h : q in F do
+    let T := (term q).get <| Option.isSome_iff_ne_none.mpr ((hterm q).mp h)
     for c in alph do
       for q' in Q do
         if A.step q c = none ∧ A.step q0 c = q' then
-          trans' := trans'.insert (q, c, some q', [T])
-    trans' := trans'.insert (q, .eos, some q0, [T, .eos])
+          trans' := trans'.insert (q, c, q', [.char T])
+    trans' := trans'.insert (q, .eos, q0, [ExtChar.char T, .eos])
 
-  ⟨alph, oalph, Q, q0, FST.mkStep trans', F'⟩
-  -/
-  sorry
+  ⟨alph, Q, q0, FST.mkStep trans', F'⟩
 
 
 def PartialLexSplit (specs : List (LexerSpecification (Ch α) Γ σ)) (w : List (Ch α)) :

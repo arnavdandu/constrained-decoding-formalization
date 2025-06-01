@@ -35,7 +35,8 @@ def BuildDetokenizingFST (tokens: List (Token α V)): FST V α Nat :=
     | some t => (0, t.string)
     | none => none
 
-  FST.mk states 0 step [0]
+  let alph := tokens.map (fun t => t.symbol)
+  FST.mk alph.eraseDups states 0 step [0]
 
 def detokenize (tokens: List (Token α V)) (w : List V) : Option (List α) :=
   match w with

@@ -242,11 +242,12 @@ instance : DecidableEq (FSA α σ) := fun M N =>
   else
     isFalse (by intro hMN; apply h; simp [toProd, hMN])
 
-def transitions (fsa : FSA α σ) : List (σ × α × Option σ) :=
+def transitions (fsa : FSA α σ) : List (σ × α × σ) :=
   fsa.states.flatMap (fun q =>
-    (fsa.alph.map (fun c =>
-        (q, c, fsa.step q c)
-      )
+    fsa.alph.flatMap (fun c =>
+        match fsa.step q c with
+        | none => []
+        | some ts => [(q, c, ts)]
     )
   )
 
@@ -330,6 +331,7 @@ lemma toNFA_evalFrom_Subsingleton (A : FSA α σ) (s : σ) (l : List α) :
 end FSA
 
 structure FST (α Γ σ) where
+  alph: List α
   states : List σ
   start : σ
   step : σ → α → Option (σ × List Γ)
@@ -471,7 +473,7 @@ def compose {β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST
     match s, a with
     | (s₁, s₂), a => compose_fun_step M₁ M₂ s₁ s₂ a
 
-  ⟨states, start, step, accept⟩
+  ⟨M₁.alph, states, start, step, accept⟩
 
 def compose_fun_evalFrom { β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (s₁ : σ) (s₂ : τ) (w : List α) : Option ((σ × τ) × List β) :=
   match M₁.evalFrom s₁ w with
@@ -550,6 +552,11 @@ def compose_correct { β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M
   exact congrArg (Option.map Prod.snd) lem
 
 
+def mkStep [DecidableEq α] [DecidableEq σ] (transitions : List (σ × α × σ × List Γ)) : σ → α → Option (σ × List Γ) :=
+  fun s a =>
+    transitions.find? (fun (s', a', _, _) => s = s' && a = a')
+    |>.map (fun (_, _, ts, word) => (ts, word))
+    |>.getD (default)
 
 variable {β τ}
   (M₁ : FST α Γ σ) (M₂ : FST Γ β τ)
