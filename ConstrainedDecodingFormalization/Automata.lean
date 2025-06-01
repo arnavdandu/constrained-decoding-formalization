@@ -346,9 +346,9 @@ variable
   along with the contents of the output tape if all transitions are valid.
   If a transition doesn't exist at any character of `l`, return `(none, [])`.  -/
 def evalFrom (s : σ) (l : List α) : Option (σ × List Γ) :=
-  match s, l with
-  | s, [] => some (s, [])
-  | s, a :: as =>
+  match l with
+  | [] => some (s, [])
+  | a :: as =>
     match (M.step s a) with
     | none => none
     | some (s', S) =>
@@ -385,6 +385,23 @@ theorem evalFrom_cons (s : σ) (x : α) (xs : List α)
   (h₀ : M.step s x = some (s', S)) (h₁ : M.evalFrom s (x :: xs) = some r) (h₂ : M.evalFrom s' xs = some t) :
     (M.evalFrom s (x :: xs)) = (t.1, S ++ t.2) := by
   simp_all only [evalFrom]
+
+theorem evalFrom_append (s : σ) (xs ys : List α) : M.evalFrom s (xs ++ ys) =
+  match M.evalFrom s xs with
+  | none => none
+  | some t => (M.evalFrom t.1 ys).map (fun (s', ts) => (s', t.2 ++ ts)) := by
+  induction xs generalizing s
+  case nil => simp [evalFrom]
+  case cons head tail ih =>
+    cases h : M.step s head with
+    | none => simp [evalFrom, h]
+    | some sp =>
+      simp[evalFrom, h, ih]
+      cases h' : M.evalFrom sp.1 tail with
+      | none => simp [h']
+      | some sp2 =>
+        simp [h']
+        cases h2 : M.evalFrom sp2.1 ys <;> simp [h2]
 
 def acceptsFrom (s : σ) : Language α :=
   { w | ∃ f ∈ M.evalFrom s w, f.1 ∈ M.accept }
@@ -427,9 +444,20 @@ def producible (q : σ) : Language Γ :=
 def singleProducible (q : σ) : Set Γ :=
     { t | ∃ w, (∃ r ∈ M.evalFrom q w, r.2 = [t]) }
 
+universe u_1 u_2
+
+
+def compose_fun_step { β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (s₁ : σ) (s₂ : τ) (x : α) : Option ((σ × τ) × List β) :=
+  match M₁.step s₁ x with
+  | none => none
+  | some (s₁', S) =>
+    match (M₂.evalFrom s₂ S) with
+    | none => none
+    | some (s₂', T) => ((s₁', s₂'), T)
+
 /-- The composition of two FSTs `M₁`, `M₂` with `M₁.oalph = M₂.alph` gives a new FST `M'`, where
   `M'.alph = M₁.alph`, `M'.oalph = M₂.oalph` and `M'.eval w = M₂.eval (M₁.eval w)` -/
-def compose {β τ} (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) : FST α β (σ × τ) :=
+def compose {β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) : FST α β (σ × τ) :=
   let start : σ × τ := (M₁.start, M₂.start)
   let states := M₁.states.flatMap (fun s₁ =>
     M₂.states.map (fun s₂ =>
@@ -443,36 +471,86 @@ def compose {β τ} (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) : FST α β (σ 
   )
   let step : (σ × τ) → α → Option ((σ × τ) × List β) := fun s a =>
     match s, a with
-    | (s₁, s₂), a =>
-      match (M₁.step s₁ a) with
-      | none => none
-      | some (s', S) =>
-        match M₂.evalFrom s₂ S with
-        | none => none
-        | some (s'', T) => ((s', s''), T)
+    | (s₁, s₂), a => compose_fun_step M₁ M₂ s₁ s₂ a
 
   ⟨M₁.alph, M₂.oalph, states, start, step, accept⟩
 
-def compose_fun_step {β τ} (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (s : σ) (x : α) : Option (τ × List β) :=
-  match M₁.step s x with
+def compose_fun_evalFrom { β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (s₁ : σ) (s₂ : τ) (w : List α) : Option ((σ × τ) × List β) :=
+  match M₁.evalFrom s₁ w with
   | none => none
-  | some (_, S) => M₂.eval S
-
-def compose_fun_evalFrom {β τ} (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (s : σ) (w : List α) : Option (List β) :=
-  match M₁.evalFrom s w with
-  | none => none
-  | some (_, S) =>
-    match (M₂.eval S) with
+  | some (s₁', S) =>
+    match (M₂.evalFrom s₂ S) with
     | none => none
-    | some (_, T) => T
+    | some (s₂', T) => ((s₁', s₂'), T)
 
-def compose_fun_eval {β τ} (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (w : List α) : Option (List β) :=
-  compose_fun_evalFrom M₁ M₂ M₁.start w
+-- todo make this less casework, very bad right now
+lemma compose_fun_step_cons { β : Type u_1 } { τ : Type u_2 }
+  (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (s₁ : σ) (s₂ : τ) (w : α) (ws : List α) :
+    compose_fun_evalFrom M₁ M₂ s₁ s₂ (w :: ws) =
+      match compose_fun_step M₁ M₂ s₁ s₂ w with
+      | none => none
+      | some ((s₁', s₂'), T) =>
+        (compose_fun_evalFrom M₁ M₂ s₁' s₂' ws).map (fun ((s₁'', s₂''), T') => ((s₁'', s₂''), T ++ T'))
+  := by
+  simp[compose_fun_evalFrom, compose_fun_step]
+  simp[evalFrom]
+  cases h₁ : M₁.step s₁ w with
+  | none =>
+    simp[evalFrom, h₁]
+  | some sp =>
+    simp
+    cases h₃ : M₂.evalFrom s₂ sp.2 with
+    | none =>
+      split <;> simp_all[h₃]
+      rename_i T' h_eq
+      split at h_eq <;> simp_all
+      rename_i T'' _
+      have := M₂.evalFrom_append s₂ sp.2 T''
+      simp_all
+    | some sp2 =>
+      split <;> simp_all[h₃]
+      next h_eq =>
+        split at h_eq <;> simp_all
+      next h_eq =>
+        split at h_eq <;> simp_all
+        rename_i T'' _
+        have := M₂.evalFrom_append s₂ sp.2 T''
+        simp_all
+        split <;> simp_all
+        rename_i heq'
+        cases h₄ : M₂.evalFrom sp2.1 T'' with
+        | none => simp_all[h₄]
+        | some dst =>
+          simp_all[h₄]
+          obtain ⟨a, ⟨b, hab⟩⟩ := heq'
+          simp_all
 
+def compose_fun_eval {β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (w : List α) : Option (List β) :=
+  (compose_fun_evalFrom M₁ M₂ M₁.start M₂.start w).map Prod.snd
 
--- TODO theorem that composition
--- is equivalent to running the two independently
-def todo := 0
+def compose_correct { β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (w : List α) :
+  ((M₁.compose M₂).eval w).map Prod.snd = compose_fun_eval M₁ M₂ w := by
+  simp[eval, compose_fun_eval]
+  have lem :
+    ∀ { s₁ s₂ },
+      (M₁.compose M₂).evalFrom (s₁, s₂) w = compose_fun_evalFrom M₁ M₂ s₁ s₂ w  := by
+    intro s₁ s₂
+    induction w generalizing s₁ s₂
+    simp_all[compose_fun_evalFrom]
+    case cons head tail ih =>
+      have := compose_fun_step_cons M₁ M₂ s₁ s₂ head tail
+      simp[←ih] at this
+      rw[this]
+      simp[evalFrom]
+      conv =>
+        pattern M₁.compose M₂
+        simp[compose]
+      simp
+      split <;> simp_all
+      simp[Option.map]
+      split <;> simp_all
+  exact congrArg (Option.map Prod.snd) lem
+
 
 
 variable {β τ}
