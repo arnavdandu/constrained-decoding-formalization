@@ -8,37 +8,32 @@ variable { α : Type u }  { β : Type v } [ BEq α ] [ BEq β ] [ t: Vocabulary 
 abbrev Checker ( α β ) [ BEq α ] [ BEq β ] [ Vocabulary α β ] := List α → β → Bool
 
 -- set of intermediate strings produced by a language model under a given constraint
-inductive CheckerIntermediateLanguage ( c: Checker α β ) : List α → Prop where
- | empty : CheckerIntermediateLanguage c []
- | build { v ts } ( h: CheckerIntermediateLanguage c ts ) ( cv: c ts v = true ) : CheckerIntermediateLanguage c (ts ++ (t.flatten v))
-inductive CheckerIntermediateLanguageI ( c: Checker α β ) : List α → Prop where
- | empty : CheckerIntermediateLanguageI c []
- | build { v ts } ( h: CheckerIntermediateLanguageI c ts ) ( cv: c ts v = true ) : CheckerIntermediateLanguageI c (ts ++ (t.flatten v))
+def checkerAllows ( c: Checker α β ) (w : List β) : Bool :=
+  match w with
+  | [] => true
+  | v :: ts =>
+    c (ts.flatMap t.flatten) v = true && checkerAllows c ts
 
+def checkerAccepts ( c: Checker α β ) (w : List β) : Bool :=
+  checkerAllows c w && c (w.flatMap t.flatten) t.eos = true
 
--- set of final strings produced by a language model under a given constraint
-inductive CheckerLanguage ( c: Checker α β ) : List α → Prop where
- | mk { ts } ( h: CheckerIntermediateLanguage c ts ) ( e: c ts t.eos = true ) : CheckerLanguage c ts
-inductive CheckerLanguageI ( c: Checker α β ) : List α → Prop where
- | mk { ts } ( h: CheckerIntermediateLanguageI c ts ) ( e: c ts t.eos = true ) : CheckerLanguageI c ts
 
 def checkerIntermediateLanguage ( c: Checker α β ) : Language α :=
-    { w | CheckerIntermediateLanguageI c w }
+    { w | ∃ bs, checkerAllows c bs ∧ bs.flatMap t.flatten = w }
 
 def checkerLanguage ( c: Checker α β ) : Language α :=
-    { w | CheckerIntermediateLanguageI c w }
+    { w | ∃ bs, checkerAccepts c bs ∧ bs.flatMap t.flatten = w }
 
 abbrev LanguageModel := List α → β
 
 
 def checkerAllowsTermination ( c : Checker α β ) : Prop :=
-      ∀ w, CheckerIntermediateLanguage c w →
-        ∃ w', CheckerLanguage c w' ∧ w.isPrefixOf w'
+      ∀ w, checkerAllows c w →
+        ∃ w', checkerAccepts c w' ∧ w.isPrefixOf w'
 
 def checkerPathIndependent ( c : Checker α β ) : Prop :=
-      ∀ w, CheckerIntermediateLanguage c w →
-          ∀ w', (∃ v, w = w' ++ t.flatten v) →
-            CheckerIntermediateLanguage c w'
+      ∀ w₁ w₂, w₁.flatMap t.flatten = w₂.flatMap t.flatten ->
+         checkerAllows c w₁ = checkerAllows c w₂
 
 def checkerSound (c : Checker α β ) : Prop := checkerAllowsTermination c ∧ checkerPathIndependent c
 
