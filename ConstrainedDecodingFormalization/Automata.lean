@@ -10,8 +10,6 @@ universe u v w y
 variable
   {α : Type u} {Γ : Type v} {σ : Type w}
 
-
-
 structure FSA (α σ) where
   alph : List α
   states : List σ
@@ -275,9 +273,6 @@ def toNFA : NFA α σ where
 #check Subsingleton
 
 
-
-
-
 omit [DecidableEq α] [Inhabited α] [Fintype α] [Fintype σ]
 @[simp]
 lemma toNFA_step_Subsingleton (A : FSA α σ) (s : σ) (a : α) :
@@ -332,10 +327,6 @@ lemma toNFA_evalFrom_Subsingleton (A : FSA α σ) (s : σ) (l : List α) :
     rw [←NFA.evalFrom]
     simp [NFA.stepSet_empty, toNFA_evalFrom_empty]
 
-
-
-
-
 end FSA
 
 structure FST (α Γ σ) where
@@ -365,8 +356,6 @@ def evalFrom (s : σ) (l : List α) : Option (σ × List Γ) :=
       | none => none
       | some (s'', T) => (s'', S ++ T)
 
-
-
 def eval (input : List α) : Option (σ × List Γ) :=
   M.evalFrom M.start input
 
@@ -387,18 +376,15 @@ private lemma evalFrom_cons_snd (s : σ) (x : α) (xs : List α)
   subst h₁
   simp_all only
 
-
 theorem evalFrom_singleton (s : σ) (a : α) (h : M.step s a = some (s', S)) :
     M.evalFrom s [a] = M.step s a := by
   simp_all [evalFrom]
-
 
 @[simp]
 theorem evalFrom_cons (s : σ) (x : α) (xs : List α)
   (h₀ : M.step s x = some (s', S)) (h₁ : M.evalFrom s (x :: xs) = some r) (h₂ : M.evalFrom s' xs = some t) :
     (M.evalFrom s (x :: xs)) = (t.1, S ++ t.2) := by
   simp_all only [evalFrom]
-
 
 def acceptsFrom (s : σ) : Language α :=
   { w | ∃ f ∈ M.evalFrom s w, f.1 ∈ M.accept }
@@ -410,7 +396,6 @@ def transducesTo (w : List α) (v : List Γ) : Prop :=
     ((M.eval w).get h).2 = v ∧ ((M.eval w).get h).1 ∈ M.accept
   else
     False
-
 
 lemma reject_none {x : List α} (h : (M.eval x).isNone) : x ∉ M.accepts := by
   simp only [Option.isNone_iff_eq_none] at h
@@ -484,116 +469,20 @@ def compose_fun_evalFrom {β τ} (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (s 
 def compose_fun_eval {β τ} (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (w : List α) : Option (List β) :=
   compose_fun_evalFrom M₁ M₂ M₁.start w
 
+
+-- TODO theorem that composition
+-- is equivalent to running the two independently
+def todo := 0
+
+
 variable {β τ}
   (M₁ : FST α Γ σ) (M₂ : FST Γ β τ)
 
 
 variable (A : FSA α σ)
 
-/-
-
-def toFSA : FSA α σ :=
-  let step := fun s a => (M.step s a).1
-  ⟨M.alph, M.states, M.start, step, M.accept⟩
-
-@[simp]
-lemma toFSA_step_correct : ∀ (s : σ) (a : α), M.toFSA.step s a = (M.step s a).1 := by
-  exact fun s a => rfl
-
-@[simp]
-lemma toFSA_evalFrom_correct : ∀ (s : σ) (l : List α), M.toFSA.evalFrom s l = (M.evalFrom s l).1 := by
-  refine fun s l => ?_
-  induction l generalizing s
-  case nil =>
-    simp [FSA.evalFrom, evalFrom]
-  case cons head tail ih =>
-    simp [FSA.evalFrom, evalFrom]
-    cases h : M.step s head
-    rename_i next output
-    cases next
-    ·
-      simp [FSA.evalFrom, evalFrom, toFSA_step_correct, h]
-    ·
-      rename_i s'
-      simp [FSA.evalFrom, evalFrom, toFSA_step_correct, h]
-      exact ih s'
-
-lemma toFSA_eval_correct : ∀ (l : List α), M.toFSA.eval l = (M.eval l).1 := by
-  refine fun l => ?_
-  simp [eval, FSA.eval]
-  exact rfl
-
-theorem toFSA_correct : M.toFSA.accepts = M.accepts := by
-  ext x
-  have h₀ : M.toFSA.eval x = (M.eval x).1 := by exact toFSA_eval_correct M x
-  cases h : (M.eval x).1
-  .
-    have : M.toFSA.eval x = none := by simp_all only
-    refine Eq.to_iff ?_
-    have h₁ : x ∉ M.accepts := by
-      refine reject_none M ?_
-      exact Option.isNone_iff_eq_none.mpr h
-    have h₂ : x ∉ M.toFSA.accepts := by
-      refine FSA.reject_none M.toFSA ?_
-      exact Option.isNone_iff_eq_none.mpr this
-    simp_all only
-  .
-    have : ∃ a, (M.eval x).1 = some a := by simp [h]
-    obtain ⟨a, ha⟩ := this
-    have : (M.toFSA.eval x) = a := by
-      simp [FSA.eval]
-      exact ha
-    constructor <;> rw [←h] at * <;> intro m
-    .
-      have : ∃ f ∈ M.toFSA.evalFrom M.toFSA.start x, f ∈ M.toFSA.accept := by exact m
-      simp_all only [Option.isSome_some, mem_accepts, FSA.mem_accepts]
-      exact m
-    .
-      have : ∃ f ∈ M.toFSA.evalFrom M.toFSA.start x, f ∈ M.toFSA.accept := by
-        simp_all only [toFSA_evalFrom_correct, Option.mem_def]
-        exact m
-      exact this
-
-
-
-variable
-  [DecidableEq α] [DecidableEq σ]
-  [Inhabited α] [Inhabited Γ]
-  [Fintype α] [Fintype Γ] [Fintype σ]
-
-def transitions (fst : FST α Γ σ) : List (σ × α × (Option σ × List Γ)) :=
-  fst.states.flatMap (fun q =>
-    (fst.alph.map (fun c =>
-        (q, c, fst.step q c)
-      )
-    )
-  )
-
-def mkStep (transitions : List (σ × α × (Option σ × List Γ))) : σ → α → (Option σ × List Γ) :=
-  fun s a =>
-    transitions.find? (fun (s', a', _) => s = s' && a = a')
-    |>.map (fun (_, _, ts) => ts)
-    |>.getD (none, [])
-
--/
-
 
 end FST
-
--- same as FST, but Option α allows for ε-transitions
-structure εFST (α Γ σ) where
-  alph : List α
-  oalph : List Γ
-  states : List σ
-  start : σ
-  step : σ → Option α → (Option σ × List Γ)
-  accept : List σ
-
-namespace εFST
-
-
-end εFST
-
 
 instance [DecidableEq σ] : Coe (FSA α σ) (NFA α σ) := ⟨fun fsa => fsa.toNFA⟩
 

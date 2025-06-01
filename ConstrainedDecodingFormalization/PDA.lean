@@ -5,8 +5,8 @@ import ConstrainedDecodingFormalization.CFG
 
 -- helpers related to prefixes
 section PrefixHelper
-
-variable { α }
+universe u
+variable { α : Type u }
 open List
 
 theorem isPrefix_merge [ BEq α ] [ LawfulBEq α] ( xs ys zs : List α ) (h : ys <+: zs) :

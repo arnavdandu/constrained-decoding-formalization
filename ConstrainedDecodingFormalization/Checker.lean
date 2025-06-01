@@ -2,8 +2,9 @@ import ConstrainedDecodingFormalization.Vocabulary
 import ConstrainedDecodingFormalization.Language
 import Mathlib.Computability.Language
 
+universe u v
 
-variable { α β } [ BEq α ] [ BEq β ] [ t: Vocabulary α β ]
+variable { α : Type u }  { β : Type v } [ BEq α ] [ BEq β ] [ t: Vocabulary α β ]
 abbrev Checker ( α β ) [ BEq α ] [ BEq β ] [ Vocabulary α β ] := List α → β → Bool
 
 -- set of intermediate strings produced by a language model under a given constraint
