@@ -1,19 +1,22 @@
 import ConstrainedDecodingFormalization.PDA
+import ConstrainedDecodingFormalization.Lexing
 import ConstrainedDecodingFormalization.RealizableSequence
 -- Actual implementation of grammar constrained decoding
 
 universe u v w z
 variable { α : Type u } { Γ : Type u } { π : Type v } { σ : Type w } { σ0 : Type z }
 
-variable [ BEq π ] [ DecidableEq σ ] [DecidableEq Γ ] [ DecidableEq α ]
+variable [ BEq π ]
+  [ FinEnum σ ] [ FinEnum Γ ] [ FinEnum α ] [ FinEnum σ0 ]
+  [ DecidableEq σ ] [DecidableEq Γ ] [ DecidableEq α ]
 
-abbrev PPTable (α σ σ0 Γ):= (σ → σ0 → (List (Token (Ch α)) × List (List Γ)))
+abbrev PPTable (α σ σ0 Γ) := (σ → σ0 → (List α × List (List Γ)))
 
-def PreprocessParser (fst_comp : FSTComp α Γ σ0) (p : PDA Γ π σ) : PPTable α σ σ0 Γ :=
+def PreprocessParser (fst_comp : FST α Γ σ0) (p : PDA Γ π σ) : PPTable α σ σ0 Γ :=
   let (re, tist) := BuildInverseTokenSpannerTable fst_comp
   fun qp =>
     let accepted := re.filter (λ s => (p.evalFrom (some (qp, [])) s).isSome)
-    let rejected := re.filter (λ s => s ∈ accepted ∧ (p.toFSA.evalFrom qp s) = [])
+    let rejected := re.filter (λ s => s ∈ accepted ∧ (p.toFSA.evalFrom qp s) = none)
     let dependent := (re \ accepted) \ rejected
     fun qa =>
       let accepted_a := (re.map (fun tok => (tist tok qa))).foldl List.append []
@@ -22,13 +25,17 @@ def PreprocessParser (fst_comp : FSTComp α Γ σ0) (p : PDA Γ π σ) : PPTable
       let dependent_a := dependent_a.dedup
       (accepted_a, dependent_a)
 
-def ComputeValidTokenMask (P : PDA Γ π σ) (itst : List Γ → σ0 → (List (Token (Ch α)))) (table : PPTable α σ σ0 Γ) (qa : σ0) (qp : σ) (st : List π) : List (Token (Ch α)) := Id.run do
+def ComputeValidTokenMask (P : PDA Γ π σ) (itst : List Γ → σ0 → List α) (table : PPTable α σ σ0 Γ) (qa : σ0) (qp : σ) (st : List π) : List α := Id.run do
   let mut accepted := (table qp qa).fst
   for d in (table qp qa).snd do
     if (P.evalFrom (some (qp, st)) d).isSome then
       accepted := accepted ++ (itst d qa)
 
   accepted.dedup
+
+
+def GCDChecker (spec: LexerSpec α Γ σ0) (parser: PDA Γ π σ) : List α →  :=
+
 
 -- we want to say that accepted if and only if
 -- theres a realizable sequence that's accepted

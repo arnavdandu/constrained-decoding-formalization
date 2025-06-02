@@ -1,41 +1,37 @@
-import ConstrainedDecodingFormalization.Vocabulary
 import ConstrainedDecodingFormalization.Language
+import ConstrainedDecodingFormalization.Lexing
 import Mathlib.Computability.Language
 
 universe u v
 
-variable { α : Type u }  { β : Type v } [ BEq α ] [ BEq β ] [ t: Vocabulary α β ]
-abbrev Checker ( α β ) [ BEq α ] [ BEq β ] [ Vocabulary α β ] := List α → β → Bool
+variable { α : Type u }  { β : Type v } [ BEq α ] [ BEq β ]
+abbrev Checker ( β ) [ BEq β ] := List β → Ch β → Bool
 
 -- set of intermediate strings produced by a language model under a given constraint
-def checkerAllows ( c: Checker α β ) (w : List β) : Bool :=
+def checkerAllows ( c: Checker β ) (w : List β) : Bool :=
   match w with
   | [] => true
   | v :: ts =>
-    c (ts.flatMap t.flatten) v = true && checkerAllows c ts
+    c ts v = true && checkerAllows c ts
 
-def checkerAccepts ( c: Checker α β ) (w : List β) : Bool :=
-  checkerAllows c w && c (w.flatMap t.flatten) t.eos = true
+def checkerAccepts ( c: Checker β ) (w : List β) : Bool :=
+  checkerAllows c w && c w .eos = true
 
+def checkerIntermediateLanguage ( c: Checker β ) : Language β :=
+    { bs | checkerAllows c bs  }
 
-def checkerIntermediateLanguage ( c: Checker α β ) : Language α :=
-    { w | ∃ bs, checkerAllows c bs ∧ bs.flatMap t.flatten = w }
+def checkerLanguage ( c: Checker β ) : Language β :=
+    { bs | checkerAccepts c bs }
 
-def checkerLanguage ( c: Checker α β ) : Language α :=
-    { w | ∃ bs, checkerAccepts c bs ∧ bs.flatMap t.flatten = w }
-
-abbrev LanguageModel := List α → β
-
-
-def checkerAllowsTermination ( c : Checker α β ) : Prop :=
+def checkerAllowsTermination ( c : Checker β ) : Prop :=
       ∀ w, checkerAllows c w →
-        ∃ w', checkerAccepts c w' ∧ w.isPrefixOf w'
+        ∃ (w' : List β), checkerAccepts c w' ∧ w.isPrefixOf w'
 
-def checkerPathIndependent ( c : Checker α β ) : Prop :=
-      ∀ w₁ w₂, w₁.flatMap t.flatten = w₂.flatMap t.flatten ->
+def checkerPathIndependent ( c : Checker β ) (flatten : β → List α) : Prop :=
+      ∀ w₁ w₂, w₁.flatMap flatten = w₂.flatMap flatten ->
          checkerAllows c w₁ = checkerAllows c w₂
 
-def checkerSound (c : Checker α β ) : Prop := checkerAllowsTermination c ∧ checkerPathIndependent c
+def checkerSound (c : Checker β ) (flatten : β → List α) : Prop := checkerAllowsTermination c ∧ checkerPathIndependent c flatten
 
 --
 -- partial def constrained_decoding ( ) := by sorry

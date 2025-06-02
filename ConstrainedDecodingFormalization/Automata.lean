@@ -4,6 +4,7 @@ import Mathlib.Computability.DFA
 import Mathlib.Computability.RegularExpressions
 import Mathlib.Data.Finset.Basic
 import Mathlib.Data.PFun
+import Mathlib.Data.FinEnum
 
 universe u v w y
 
@@ -11,8 +12,6 @@ variable
   {α : Type u} {Γ : Type v} {σ : Type w}
 
 structure FSA (α σ) where
-  alph : List α
-  states : List σ
   start : σ
   step : σ → α → Option σ
   accept : List σ
@@ -223,7 +222,7 @@ variable
   [Fintype α] [Fintype Γ] [Fintype σ]
 
 instance : DecidableEq (FSA α σ) := fun M N =>
-  let toProd (fsa : FSA α σ) := (fsa.alph, fsa.states, fsa.start, fsa.step, fsa.accept)
+  let toProd (fsa : FSA α σ) := (fsa.start, fsa.step, fsa.accept)
 
   have h₁ : Decidable (toProd M = toProd N) := by
     simp_all only [Prod.mk.injEq, toProd]
@@ -241,21 +240,6 @@ instance : DecidableEq (FSA α σ) := fun M N =>
     isTrue (by exact h_inj M N h)
   else
     isFalse (by intro hMN; apply h; simp [toProd, hMN])
-
-def transitions (fsa : FSA α σ) : List (σ × α × σ) :=
-  fsa.states.flatMap (fun q =>
-    fsa.alph.flatMap (fun c =>
-        match fsa.step q c with
-        | none => []
-        | some ts => [(q, c, ts)]
-    )
-  )
-
-def mkStep (transitions : List (σ × α × Option σ)) : σ → α → Option σ :=
-  fun s a =>
-    transitions.find? (fun (s', a', _) => s = s' && a = a')
-    |>.map (fun (_, _, ts) => ts)
-    |>.getD (default)
 
 def stepList (S : List σ) (a : α) : List (Option σ) :=
   (S.map (fun s => A.step s a)).eraseDups
@@ -331,8 +315,6 @@ lemma toNFA_evalFrom_Subsingleton (A : FSA α σ) (s : σ) (l : List α) :
 end FSA
 
 structure FST (α Γ σ) where
-  alph: List α
-  states : List σ
   start : σ
   step : σ → α → Option (σ × List Γ)
   accept : List σ
@@ -444,6 +426,40 @@ def producible (q : σ) : Language Γ :=
 def singleProducible (q : σ) : Set Γ :=
     { t | ∃ w, (∃ r ∈ M.evalFrom q w, r.2 = [t]) }
 
+-- lemma:
+-- looks like a path of no productions
+-- and then a single production
+-- all no production paths are equivalent
+
+partial def computeSingleProducible
+  [ Fintype Γ ] [ Fintype σ ] [ a: FinEnum α ]
+  [DecidableEq σ ] [DecidableEq α ] [DecidableEq Γ ]
+  (q : σ) : List Γ :=
+  let alph := a.toList
+  let rec dfs : σ → List σ → List Γ → List σ × List Γ :=
+    fun curr vis ret  =>
+      if curr ∈ vis then (vis, ret)
+      else
+        let (vis', ret') :=
+          alph.foldl (fun (acc : List σ × List Γ) next =>
+            let (visacc, retacc) := acc
+            match M.step curr next with
+            | none => (visacc, retacc)
+            | some (nextState, output) =>
+              if h : output.length = 1 then
+                let nextOutput := List.get output ⟨0, by rw [h]; norm_num⟩
+                let (visacc', res) := dfs nextState visacc retacc
+                (visacc', nextOutput :: res)
+              else
+                let (visacc', res) := dfs nextState visacc retacc
+                (visacc', res)
+          ) (curr :: vis, ret)
+
+        (vis', ret')
+
+  (dfs q [] []).snd
+
+
 universe u_1 u_2
 
 
@@ -459,11 +475,6 @@ def compose_fun_step { β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (
   `M'.alph = M₁.alph`, `M'.oalph = M₂.oalph` and `M'.eval w = M₂.eval (M₁.eval w)` -/
 def compose {β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) : FST α β (σ × τ) :=
   let start : σ × τ := (M₁.start, M₂.start)
-  let states := M₁.states.flatMap (fun s₁ =>
-    M₂.states.map (fun s₂ =>
-      (s₁, s₂)
-    )
-  )
   let accept := M₁.accept.flatMap (fun s₁ =>
     M₂.accept.map (fun s₂ =>
       (s₁, s₂)
@@ -473,7 +484,7 @@ def compose {β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST
     match s, a with
     | (s₁, s₂), a => compose_fun_step M₁ M₂ s₁ s₂ a
 
-  ⟨M₁.alph, states, start, step, accept⟩
+  ⟨start, step, accept⟩
 
 def compose_fun_evalFrom { β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (s₁ : σ) (s₂ : τ) (w : List α) : Option ((σ × τ) × List β) :=
   match M₁.evalFrom s₁ w with
@@ -552,11 +563,6 @@ def compose_correct { β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M
   exact congrArg (Option.map Prod.snd) lem
 
 
-def mkStep [DecidableEq α] [DecidableEq σ] (transitions : List (σ × α × σ × List Γ)) : σ → α → Option (σ × List Γ) :=
-  fun s a =>
-    transitions.find? (fun (s', a', _, _) => s = s' && a = a')
-    |>.map (fun (_, _, ts, word) => (ts, word))
-    |>.getD (default)
 
 variable {β τ}
   (M₁ : FST α Γ σ) (M₂ : FST Γ β τ)

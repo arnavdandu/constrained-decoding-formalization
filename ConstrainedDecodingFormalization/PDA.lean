@@ -44,8 +44,6 @@ theorem isPrefix_merge [ BEq α ] [ LawfulBEq α] ( xs ys zs : List α ) (h : ys
 end PrefixHelper
 
 structure PDA (Γ π σ) where
-  alph : List Γ
-  states : List σ
   start : σ
   -- if top of stack matches first, replace with second
   step : σ → Γ → Option (List π × List π × σ)
@@ -57,7 +55,7 @@ namespace PDA
 variable { Γ π σ } [ BEq π ] ( P : PDA Γ π σ )
 
 instance [Inhabited σ] : Inhabited (PDA Γ π σ) :=
-  ⟨PDA.mk default default default (fun _ _ => none) default⟩
+  ⟨PDA.mk default (fun _ _ => none) default⟩
 
 def fullStep ( s : Option (σ × List π) ) (t : Γ ) : Option ( σ × List π ) := do
   let (s, st) ← s
@@ -141,7 +139,7 @@ def pruned : Prop :=
 
 -- removes all stack operations
 def toFSA : FSA Γ σ :=
-  FSA.mk P.alph P.states P.start
+  FSA.mk P.start
     (fun st a => match P.step st a with
       | some (_, _, dst) => some dst
       | none => none)

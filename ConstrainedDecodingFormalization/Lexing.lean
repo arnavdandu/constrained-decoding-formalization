@@ -11,7 +11,6 @@ import Mathlib.Data.Fintype.Sum
 
 import ConstrainedDecodingFormalization.RegularExpressionsToEpsilonNFA
 import ConstrainedDecodingFormalization.Automata
-import ConstrainedDecodingFormalization.Vocabulary
 import ConstrainedDecodingFormalization.Partition
 
 open List RegularExpression
@@ -125,8 +124,6 @@ def BuildLexingFST (spec: LexerSpec α Γ σ) :
     FST (Ch α) (Ch Γ) σ := Id.run do
   let ⟨A, term, hterm, _⟩ := spec
 
-  let Q := A.states
-  let alph := A.alph
   let q0 := A.start
   let F := A.accept
 
@@ -137,7 +134,7 @@ def BuildLexingFST (spec: LexerSpec α Γ σ) :
         some ((A.step q c).get h, [])
       else if h : q ∈ F then
         let T := (term q).get <| ((hterm q).mp h)
-        A.step q0 c |>.map (fun q' => (q', [.char T]))
+        A.step q0 c |>.map (fun q' => (q', [ExtChar.char T]))
       else
         none
     | ExtChar.eos =>
@@ -147,59 +144,29 @@ def BuildLexingFST (spec: LexerSpec α Γ σ) :
       else
         none
 
-  ⟨alph, Q, q0, step, [q0]⟩
+  ⟨q0, step, [q0]⟩
 
 
-def PartialLexSplit (specs : List (LexerSpecification (Ch α) Γ σ)) (w : List (Ch α)) :
-    match PartialLex specs (w ++ [.eos]) with
-    | some (tokens, unlexed) =>
-      -- exists a partition corresponding to the output of partial lex
-      unlexed = [] ∧
-      ∃ p, IsPartition p w ∧ p.length = tokens.length ∧
-        ∀ t ∈ (List.zip tokens p), ∃ spec ∈ specs, t.fst = spec.term_sym ∧ t.snd ∈ spec.automaton.accepts
-    | none =>
-      -- there is no possible partitions in which we can lex it
-      ∀ p, IsPartition p w → ∃ x ∈ p, ∀ lexer ∈ specs, x ∉ lexer.automaton.accepts
-      := by
-  split
-  case h_1 tokens unlexed heq =>
-    simp[PartialLex] at heq
-    rcases heq
-    case intro w1 h =>
-    cases w1
-    case intro w' h' =>
-    cases h'
-    case intro w'' h'' =>
-    sorry
-  case h_2 =>
-    sorry
-
-def LexingFST_eq_PartialLex := 0
-def soundnessLemma := 0
-def completenessLemma := 0
-
-#check RegularExpression (Ch Char)
-
-def mkchar {α : Type u} (x : α) : ExtChar α := ExtChar.char x
-def REchar {α : Type u} (x : α) : RE (ExtChar α) := char (mkchar x)
-
-def ab_plus : RE (Ch Char) :=
-  comp (REchar 'a') (comp (REchar 'b') (star (REchar 'b')))
-
-def ac_plus : RE (Ch Char) :=
-  comp (REchar 'a') (comp (REchar 'c') (star (REchar 'c')))
-
-def test_re : RE (Ch Char) :=
-  plus ab_plus ac_plus
-
-#eval [mkchar 'a', mkchar 'b'] ∈ (test_re).matches'
-#eval (test_re)
-#eval [mkchar 'a', mkchar 'c'] ∈ (test_re).matches'
-#eval [mkchar 'a', mkchar 'b', mkchar 'b', mkchar 'b'] ∈ (test_re).matches'
-
-
-
-
-
-
---#eval ((toεNFA test_re).start)
+-- def PartialLexSplit (spec : LexerSpec α Γ σ) (w : List α) :
+--     match PartialLex specs (w.map (λ c => ExtChar.char c) ++ [.eos]) with
+--     | some (tokens, unlexed) =>
+--       -- exists a partition corresponding to the output of partial lex
+--       unlexed = [] ∧
+--       ∃ p, IsPartition p w ∧ p.length = tokens.length ∧
+--         ∀ t ∈ (List.zip tokens p), ∃ spec ∈ specs, t.fst = spec.term_sym ∧ t.snd ∈ spec.automaton.accepts
+--     | none =>
+--       -- there is no possible partitions in which we can lex it
+--       ∀ p, IsPartition p w → ∃ x ∈ p, ∀ lexer ∈ specs, x ∉ lexer.automaton.accepts
+--       := by
+--   split
+--   case h_1 tokens unlexed heq =>
+--     simp[PartialLex] at heq
+--     rcases heq
+--     case intro w1 h =>
+--     cases w1
+--     case intro w' h' =>
+--     cases h'
+--     case intro w'' h'' =>
+--     sorry
+--   case h_2 =>
+--     sorry
