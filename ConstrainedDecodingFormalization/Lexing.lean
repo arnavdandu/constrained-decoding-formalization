@@ -59,6 +59,11 @@ def List.terminalSymbols (terminals : List (Terminal α Γ)) : List Γ :=
 def List.sequence {α : Type u} (tokens : List (Token α Γ)) : List Γ :=
   tokens.map (fun t => t.symbol)
 
+structure LexerSpec (α Γ σ) where
+  automaton : FSA α σ
+  term: σ → Option Γ
+  hterm: ∀ s, s ∈ automaton.accept ↔ (term s).isSome
+  term_inj: ∀ s₁ s₂ t, term s₁ = some t ∧ term s₂ = some t → s₁ = s₂
 
 structure LexerSpecification (α Γ σ) where
   automaton : FSA α σ
@@ -116,26 +121,33 @@ noncomputable def PartialLex (specs :  List (LexerSpecification (Ch α) Γ σ)) 
 
 /-- Given a lexing automaton `A`, build a character-to-token lexing FST with output over `Γ`
     For the lexing FSA, we'll use the convention that each terminal symbol is attached to an accept state (see Fig. 1) -/
-def BuildLexingFST (A : FSA α σ) (term: σ → Option Γ) (hterm: ∀ s, s ∈ A.accept ↔ term s ≠ none) :
+def BuildLexingFST (spec: LexerSpec α Γ σ) :
     FST (Ch α) (Ch Γ) σ := Id.run do
+  let ⟨A, term, hterm, _⟩ := spec
+
   let Q := A.states
-  let trans := A.transitions
   let alph := A.alph
   let q0 := A.start
   let F := A.accept
 
-  let F' := [q0]
-  let mut trans' : List (σ × Ch α × σ × List (Ch Γ)) := trans.map (fun (q, c, q') => (q, ExtChar.char c, q', [] ))
+  let step := fun (q : σ) (c : Ch α) =>
+    match c with
+    | ExtChar.char c =>
+      if h : (A.step q c).isSome then
+        some ((A.step q c).get h, [])
+      else if h : q ∈ F then
+        let T := (term q).get <| ((hterm q).mp h)
+        A.step q0 c |>.map (fun q' => (q', [.char T]))
+      else
+        none
+    | ExtChar.eos =>
+      if h : q ∈ F then
+        let T := (term q).get <| ((hterm q).mp h)
+        some (q0, [T, .eos])
+      else
+        none
 
-  for h : q in F do
-    let T := (term q).get <| Option.isSome_iff_ne_none.mpr ((hterm q).mp h)
-    for c in alph do
-      for q' in Q do
-        if A.step q c = none ∧ A.step q0 c = q' then
-          trans' := trans'.insert (q, c, q', [.char T])
-    trans' := trans'.insert (q, .eos, q0, [ExtChar.char T, .eos])
-
-  ⟨alph, Q, q0, FST.mkStep trans', F'⟩
+  ⟨alph, Q, q0, step, [q0]⟩
 
 
 def PartialLexSplit (specs : List (LexerSpecification (Ch α) Γ σ)) (w : List (Ch α)) :
