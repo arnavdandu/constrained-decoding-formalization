@@ -18,14 +18,14 @@ def ParserWithEOS (p: PDA Γ π σp) : PDA (Ch Γ) π (Ch σp) :=
   let accept := ExtChar.eos
   let step := fun s c =>
     match s, c with
-    | .char s, .char c => sorry
+    | .char s, .char c =>
+      (p.step s c).map (fun (spt, spr, s) => (spt, spr, ExtChar.char s))
     | .char s, .eos =>
       if s ∈ p.accept then
         some ([], [], accept)
       else
         none
-    | .eos, _ => none
-
+    | .eos, _ => some ([], [], .eos)
 
   ⟨start, step, [accept]⟩
 
