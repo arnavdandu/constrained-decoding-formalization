@@ -12,6 +12,24 @@ variable [ BEq π ]
 
 abbrev PPTable (α σp σa Γ) := (σp → σa → (List α × List (List Γ) × List (List Γ)))
 
+-- todo use a better solution for extending the number of states by 1
+def ParserWithEOS (p: PDA Γ π σp) : PDA (Ch Γ) π (Ch σp) :=
+  let start := ExtChar.char p.start
+  let accept := ExtChar.eos
+  let step := fun s c =>
+    match s, c with
+    | .char s, .char c => sorry
+    | .char s, .eos =>
+      if s ∈ p.accept then
+        some ([], [], accept)
+      else
+        none
+    | .eos, _ => none
+
+
+  ⟨start, step, [accept]⟩
+
+
 def PreprocessParser (fst_comp : FST α Γ σa) (p : PDA Γ π σp) : PPTable α σp σa Γ :=
   let (re, tist) := BuildInverseTokenSpannerTable fst_comp
   fun qp =>
@@ -41,12 +59,14 @@ def ComputeValidTokenMask (P : PDA Γ π σp) (itst : List Γ → σa → List �
 -/
 def GCDChecker
    [FinEnum (Ch β)] [FinEnum σp] [FinEnum σa] [FinEnum π] [FinEnum (Ch Γ)] [FinEnum α]
-   (spec: LexerSpec α Γ σa) (tokens: List (Token (Ch α) (Ch β))) (parser: PDA (Ch Γ) π σp) : List β → Ch β → Bool :=
+   (spec: LexerSpec α Γ σa) (tokens: List (Token (Ch α) (Ch β))) (parser: PDA Γ π σp) : List β → Ch β → Bool :=
   let detok := Detokenizing.BuildDetokenizingFST tokens
   let fst := BuildLexingFST spec
   let comb := FST.compose detok fst
 
-  let pp_table : PPTable (Ch β) σp (Unit × σa) (Ch Γ) := PreprocessParser comb parser
+  let parser := ParserWithEOS parser
+
+  let pp_table := PreprocessParser comb parser
   let ⟨_, itst⟩ := BuildInverseTokenSpannerTable comb
 
   fun curr cand =>
