@@ -68,7 +68,7 @@ def accepts : Language α := A.acceptsFrom A.start
 
 
 def prefixLanguage : Language α :=
-  {x | ∃ y ∈ A.accepts, x ++ y ∈ A.accepts }
+  {x | ∃ y, x ++ y ∈ A.accepts }
 
 def isPrefix (w : List α) : Prop := w ∈ A.prefixLanguage
 
@@ -426,11 +426,6 @@ def producible (q : σ) : Language Γ :=
 def singleProducible (q : σ) : Set Γ :=
     { t | ∃ w, (∃ r ∈ M.evalFrom q w, r.2 = [t]) }
 
--- lemma:
--- looks like a path of no productions
--- and then a single production
--- all no production paths are equivalent
-
 partial def computeSingleProducible
   [ Fintype Γ ] [ Fintype σ ] [ a: FinEnum α ]
   [DecidableEq σ ] [DecidableEq α ] [DecidableEq Γ ]
@@ -448,11 +443,12 @@ partial def computeSingleProducible
             | some (nextState, output) =>
               if h : output.length = 1 then
                 let nextOutput := List.get output ⟨0, by rw [h]; norm_num⟩
-                let (visacc', res) := dfs nextState visacc retacc
-                (visacc', nextOutput :: res)
-              else
+                (visacc, nextOutput :: retacc)
+              else if output == [] then
                 let (visacc', res) := dfs nextState visacc retacc
                 (visacc', res)
+              else
+                acc
           ) (curr :: vis, ret)
 
         (vis', ret')

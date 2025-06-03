@@ -1,7 +1,8 @@
+import ConstrainedDecodingFormalization.Automata
+import ConstrainedDecodingFormalization.Language
 import Mathlib.Computability.Language
 import Mathlib.Data.Set.Basic
 import Mathlib.Computability.ContextFreeGrammar
-import ConstrainedDecodingFormalization.CFG
 
 -- helpers related to prefixes
 section PrefixHelper
@@ -70,7 +71,7 @@ def fullStep ( s : Option (σ × List π) ) (t : Γ ) : Option ( σ × List π )
 theorem fullStep_none ( t : Γ ) : P.fullStep none t = none :=
   by rfl
 
-theorem fullStep_stackInvariance [ LawfulBEq π  ] : ∀ s st st' t, st <+: st' →
+private theorem fullStep_stackInvariance [ LawfulBEq π  ] : ∀ s st st' t, st <+: st' →
    match P.fullStep (some (s, st)) t with
   | some (sn, stn) => P.fullStep (some (s, st')) t = some (sn, stn ++ st'.drop st.length)
   | none => True
@@ -95,7 +96,6 @@ theorem fullStep_stackInvariance [ LawfulBEq π  ] : ∀ s st st' t, st <+: st' 
     simp[partition]
   | none =>
     simp[h] at heq
-
 
 def evalFrom ( s: Option ( σ × List π ) ) : List Γ → Option (σ × List π) :=
   List.foldl ( fun s a => do fullStep P s a) s
@@ -145,9 +145,7 @@ def toFSA : FSA Γ σ :=
       | none => none)
     P.accept
 
--- refactor this lemma so that it matches
--- evalFrom instead of stepList
-lemma fullStep_evalFrom [DecidableEq σ] :
+private lemma fullStep_evalFrom [DecidableEq σ] :
   ∀ s st t,
     match P.fullStep (some (s, st)) t with
     | some (s', _) => P.toFSA.step s t = some s'

@@ -2,7 +2,6 @@
 -- Import modules here that should be built as part of the library.
 import «ConstrainedDecodingFormalization».Basic
 import «ConstrainedDecodingFormalization».Lexing
-import «ConstrainedDecodingFormalization».CFG
 import «ConstrainedDecodingFormalization».Automata
 import «ConstrainedDecodingFormalization».Vocabulary
 import «ConstrainedDecodingFormalization».ConstrainedDecoding

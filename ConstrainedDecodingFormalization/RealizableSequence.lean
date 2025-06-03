@@ -27,7 +27,7 @@ namespace Detokenizing
 
 variable [BEq V]
 
-def BuildDetokenizingFST (tokens: List (Token α V)): FST V α Unit :=
+def BuildDetokenizingFST (tokens: List (Token α V)) : FST V α Unit :=
   let step := fun _ s =>
     match tokens.find? λ t => t.symbol == s with
     | some t => (Unit.unit, t.string)

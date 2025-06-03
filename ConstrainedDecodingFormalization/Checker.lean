@@ -12,7 +12,7 @@ def checkerAllows ( c: Checker β ) (w : List β) : Bool :=
   match w with
   | [] => true
   | v :: ts =>
-    c ts v = true && checkerAllows c ts
+    c ts v && checkerAllows c ts
 
 def checkerAccepts ( c: Checker β ) (w : List β) : Bool :=
   checkerAllows c w && c w .eos = true
@@ -33,24 +33,5 @@ def checkerPathIndependent ( c : Checker β ) (flatten : β → List α) : Prop 
 
 def checkerSound (c : Checker β ) (flatten : β → List α) : Prop := checkerAllowsTermination c ∧ checkerPathIndependent c flatten
 
---
--- partial def constrained_decoding ( ) := by sorry
-  -- given
-  -- a constrained lexing automata (symbols )
-  -- a context free grammar of the symbols
-  -- a language model
-  -- we construct our pipeline by building lexer and parser combination
-  -- analyze the given states to find inverse realizable terminal sequences
-  -- do acceptance based off of that
-
-
--- main theorems (all require further refinement of lexer/parser)
-
--- 1. if recognized by the lexer and parser, then in the constrained language
-
-
--- 2. all prefixes are prefixes in the lexer/parser language
-
--- 3. if in the constrained language, then recognized by the lexer and parser
-def checkerComplete (c : Checker α β ) ( l: Language α) : Prop :=
+def checkerComplete (c : Checker β ) ( l: Language β) : Prop :=
     checkerLanguage c = l ∧ checkerIntermediateLanguage c = l.prefixes
