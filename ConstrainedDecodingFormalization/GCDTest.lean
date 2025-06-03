@@ -99,10 +99,14 @@ def checker := GCDChecker simpleLexer tokens simplePDA
 #eval simplePDA.evalFrom (some (simplePDA.start, [])) [.char 0, .char 0, .char 1, .char 1]
 #eval simplePDA.step 1  (.char 1)
 #eval simplePDA.fullStep (some (1, [0, 1])) (.char 1)
-#eval full_fst.eval [.char 0, .char 1, .eos]
-#eval (PreprocessParser full_fst simplePDA) simplePDA.start full_fst.start
-#eval (BuildInverseTokenSpannerTable full_fst).2 [.char 0, .char 1] (.unit, 0)
+#eval full_fst.eval [.char 0, .char 0, .char 1, .eos]
+#eval (PreprocessParser full_fst simplePDA) 1 1
+#eval (BuildInverseTokenSpannerTable full_fst).1
+#eval (BuildInverseTokenSpannerTable full_fst).2 [.char 0, .char 1] (.unit, 1)
 #eval checkerAllows checker []
 #eval checkerAllows checker [0]
 #eval checkerAllows checker [1]
+#eval checker [0] (.char 1)
+#eval checkerAllows checker [0, 1]
+#eval checkerAllows checker [1, 1, 0, 0, 0, 1, 1]
 #eval checkerAccepts checker []

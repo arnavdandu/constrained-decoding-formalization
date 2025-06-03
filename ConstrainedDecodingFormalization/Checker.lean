@@ -8,11 +8,14 @@ variable { α : Type u }  { β : Type v } [ BEq α ] [ BEq β ]
 abbrev Checker ( β ) [ BEq β ] := List β → Ch β → Bool
 
 -- set of intermediate strings produced by a language model under a given constraint
-def checkerAllows ( c: Checker β ) (w : List β) : Bool :=
+private def checkerAllowsHelper ( c: Checker β ) (w : List β) : Bool :=
   match w with
   | [] => true
   | v :: ts =>
-    c ts v && checkerAllows c ts
+    c ts.reverse v && checkerAllowsHelper c ts
+
+def checkerAllows ( c: Checker β ) (w : List β) : Bool :=
+  checkerAllowsHelper c w.reverse
 
 def checkerAccepts ( c: Checker β ) (w : List β) : Bool :=
   checkerAllows c w && c w .eos = true
