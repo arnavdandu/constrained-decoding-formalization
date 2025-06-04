@@ -27,7 +27,7 @@ variable
   [Inhabited α] [Inhabited Γ]
   [Fintype α] [Fintype σ] [Fintype Γ]
 
-
+/-- Extend character alphabet with EOS symbol-/
 inductive ExtChar (α : Type u)
 | char : α → ExtChar α
 | eos  : ExtChar α
