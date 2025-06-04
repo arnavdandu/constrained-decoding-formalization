@@ -75,19 +75,21 @@ private theorem fullStep_stackInvariance [ LawfulBEq π  ] : ∀ s st sn stn st'
    (sn, stn) ∈ P.fullStep {(s, st)} t →
    (sn, stn ++ st'.drop st.length) ∈ P.fullStep {(s, st')} t
   := by
-  intro s st st' t
+  intro s st sn stn st' t
   intro pfx
   simp_all[fullStep]
-  have (top, rep, dst) := step
-  simp[h] at heq
-  split at heq
-  case some.h_2 => contradiction
-  rename_i top_pfx_st
-  simp at heq
-  simp[←heq]
+  intro top rep dst _
+  split <;> simp_all
+  rename_i rem heq
+  intro hsn hdst
+  exists top, rep, dst
+  constructor
+  assumption
   have partition := isPrefix_merge top st st' pfx
-  simp only [top_pfx_st] at partition
-  simp[partition]
+  have p := List.isPrefixOf?_eq_some_iff_append_eq.mpr heq
+  simp[p] at partition
+  have p2 := List.isPrefixOf?_eq_some_iff_append_eq.mpr partition
+  simp[p2]
 
 
 def evalFrom ( s: Set ( σ × List π ) ) : List Γ → Set (σ × List π) :=
@@ -199,7 +201,7 @@ lemma evalFrom_iff_exists :
     exact h.right
 
 
-private lemma fullStep_evalFrom [DecidableEq σ] :
+lemma fullStep_evalFrom [DecidableEq σ] :
   ∀ S s' st' t,
     (s', st') ∈ P.fullStep S t →
       s' ∈ (P.toNFA.stepSet (Prod.fst '' S) t)
@@ -291,47 +293,31 @@ theorem overApproximation [DecidableEq σ] :
   simp[NFA.eval]
   exact dst_nfa
 
-
-lemma stackInvariance_lem [ LawfulBEq π ] : ∀ w s st st',
-  st <+: st' →
-    match P.evalFrom (some (s, st)) w with
-    | some (sf, stf) =>
-        P.evalFrom (some (s, st')) w = some (sf, stf ++ st'.drop st.length)
-    | none => True := by
-  intro w s st st'
+lemma stackInvariance_lem [ LawfulBEq π ] : ∀ s st sn stn st' w, st <+: st' →
+   (sn, stn) ∈ P.evalFrom {(s, st)} w →
+   (sn, stn ++ st'.drop st.length) ∈ P.evalFrom {(s, st')} w := by
+  intro s st sn stn st' w
   intro pfx
   induction w generalizing s st st'
   case nil =>
-    split
-    case h_1 heq =>
-      simp[evalFrom] at heq
-      simp[heq.left, ←heq.right]
-      exact Eq.symm (List.prefix_iff_eq_append.mp pfx)
-    case h_2 heq => contradiction
+    simp
+    intro h h2
+    constructor
+    assumption
+    rw[h2]
+    exact List.prefix_iff_eq_append.mp pfx
   case cons h t ih =>
-    have fs_si := P.fullStep_stackInvariance s st st' h pfx
-    split
-    -- we were able to tranisition properly using st
-    -- so must be able to tranisition using the larger st'
-    case h_1 heq =>
-      simp at heq
-      simp
-      generalize h2 : P.fullStep (some (s, st)) h = step at *
-      cases step
-      case some step' =>
-        simp_all
-        have step_pfx : step'.2 <+: (step'.2 ++ List.drop st.length st') := by
-          simp_all
-        have ih' := ih step'.1 step'.2 (step'.2 ++ List.drop st.length st') step_pfx
-        simp[heq] at ih'
-        exact ih'
-      case none =>
-        -- impossible
-        simp at heq
-    -- we couldn't transition properly using st
-    -- but we can't say anything about using the larger st'
-    case h_2 heq =>
-      simp
+    intro h_p
+    simp at h_p
+    obtain ⟨step, hstep⟩ := (P.evalFrom_iff_exists (P.fullStep {(s, st)} h) _ t).mp h_p
+    have step_pfx : step.2 <+: (step.2 ++ List.drop st.length st') := by simp_all
+    have ih' := ih step.1 step.2 (step.2 ++ List.drop st.length st') step_pfx hstep.right
+    have fs_si := P.fullStep_stackInvariance s st step.fst step.snd st' h pfx hstep.left
+    simp at ih' ⊢
+    apply evalFrom_subset
+    case intro.u => exact {(step.1, step.2 ++ List.drop st.length st')}
+    exact Set.singleton_subset_iff.mpr fs_si
+    exact ih'
 
 theorem stackInvariance [ LawfulBEq π ] : ∀ w s st st',
   st <+: st' → w ∈ P.acceptsFrom s st → w ∈ P.acceptsFrom s st'  := by
@@ -340,7 +326,7 @@ theorem stackInvariance [ LawfulBEq π ] : ∀ w s st st',
   intro wap
   simp[acceptsFrom] at wap
   obtain ⟨dst, ⟨⟨stk_f, h_eval⟩, h_accept⟩⟩ := wap
-  have := P.stackInvariance_lem w s st st' pfx
+  have := P.stackInvariance_lem s st dst stk_f st' w pfx h_eval
   simp[h_eval] at this
   simp[acceptsFrom]
   constructor
@@ -370,7 +356,7 @@ theorem pruned_intermediate_eq_prefix ( h : P.pruned ) :
   case mp =>
     intro h_x
     simp[intermediate] at h_x
-    cases h' : P.evalFrom (some (P.start, [])) x with
+    cases h' : P.evalFrom {(P.start, [])} x with
     | some sp'  =>
       have (s', st') := sp'
       have ⟨fin, hfin⟩ := h s' st' x h'
