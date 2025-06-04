@@ -355,43 +355,45 @@ theorem pruned_intermediate_eq_prefix ( h : P.pruned ) :
   apply Iff.intro
   case mp =>
     intro h_x
-    simp[intermediate] at h_x
-    cases h' : P.evalFrom {(P.start, [])} x with
-    | some sp'  =>
-      have (s', st') := sp'
-      have ⟨fin, hfin⟩ := h s' st' x h'
-      simp[acceptsFrom] at hfin
-      obtain ⟨s'', ⟨⟨st'', h2⟩, s''_acc⟩⟩ := hfin
-      -- so then x ++ fin is in accepts
-      have := P.evalFull_append x fin
-      simp[evalFull, h', h2] at this
-      have acc : (x ++ fin) ∈ P.accepts := by
-        simp_all[accepts, acceptsFrom]
-        exists s''
-        apply And.intro
-        exists st''
-        exact s''_acc
-      have pfx : x <+: (x ++ fin) := by simp
-      simp[Language.prefixes]
-      exists (x ++ fin)
-    | none =>
-      simp[eval] at h_x
-      contradiction
+    simp[intermediate, eval] at h_x
+    have : ∃ u, u ∈ P.evalFrom {(P.start, [])} x := by
+      refine Set.nonempty_def.mp ?_
+      exact Set.nonempty_iff_ne_empty.mpr h_x
+    obtain ⟨⟨s', st'⟩, h_u⟩ := this
+    have ⟨fin, hfin⟩ := h s' st' x h_u
+    simp[acceptsFrom] at hfin
+    obtain ⟨s'', ⟨⟨st'', h2⟩, s''_acc⟩⟩ := hfin
+    -- so then x ++ fin is in accepts
+    have x_fin_trans := P.evalFull_append x fin
+    simp[evalFull, h_u, h2] at x_fin_trans
+    have := P.evalFrom_subset {(s', st')} (P.evalFrom {(P.start, [])} x)
+    simp at this
+    have ss := this h_u fin
+    rw[←x_fin_trans] at ss
+    have h2' := ss h2
+    rw[←evalFull] at h2'
+    have acc : (x ++ fin) ∈ P.accepts := by
+      simp_all[accepts, acceptsFrom]
+      exists s''
+      apply And.intro
+      exists st''
+      exact s''_acc
+    have pfx : x <+: (x ++ fin) := by simp
+    simp[Language.prefixes]
+    exists (x ++ fin)
   case mpr =>
     intro h_x
     simp[Language.prefixes] at h_x
     simp[intermediate, eval]
-    cases h' : P.evalFrom (some (P.start, [])) x with
-    | some x =>
-      simp
-    | none =>
-      obtain ⟨fin, ⟨fin_acc, x_pfx_fin⟩⟩ := h_x
-      simp[accepts, acceptsFrom] at fin_acc
-      obtain ⟨s'', ⟨⟨st'', h2⟩, s''_acc⟩⟩ := fin_acc
-      obtain ⟨tail, htail⟩ := x_pfx_fin
-      have := P.evalFull_append x tail
-      simp[evalFull, h', htail] at this
-      rw[this] at h2
-      contradiction
+    by_contra
+    obtain ⟨fin, ⟨fin_acc, x_pfx_fin⟩⟩ := h_x
+    simp[accepts, acceptsFrom] at fin_acc
+    obtain ⟨s'', ⟨⟨st'', h2⟩, s''_acc⟩⟩ := fin_acc
+    obtain ⟨tail, htail⟩ := x_pfx_fin
+    have := P.evalFull_append x tail
+    expose_names
+    simp[evalFull, h_1, htail] at this
+    rw[this] at h2
+    contradiction
 
 end PDA
