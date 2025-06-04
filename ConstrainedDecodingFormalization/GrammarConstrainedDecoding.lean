@@ -11,29 +11,28 @@ variable [ BEq π ]
   [ DecidableEq σp ] [DecidableEq β] [DecidableEq Γ ] [ DecidableEq α ]
 
 abbrev PPTable (α σp σa Γ) := (σp → σa → (List α × List (List Γ) × List (List Γ)))
-
 -- todo use a better solution for extending the number of states by 1
-def ParserWithEOS (p: PDA Γ π σp) : PDA (Ch Γ) π (Ch σp) :=
+def ParserWithEOS  (p: PDA Γ π σp) : PDA (Ch Γ) π (Ch σp) :=
   let start := ExtChar.char p.start
   let accept := ExtChar.eos
   let step := fun s c =>
     match s, c with
     | .char s, .char c =>
-      (p.step s c).map (fun (spt, spr, s) => (spt, spr, ExtChar.char s))
+      (fun (spt, spr, s) => (spt, spr, ExtChar.char s)) '' (p.step s c)
     | .char s, .eos =>
       if s ∈ p.accept then
-        some ([], [], accept)
+        { ([], [], accept) }
       else
-        none
-    | .eos, _ => some ([], [], .eos)
+        ∅
+    | .eos, _ => {([], [], .eos)}
 
-  ⟨start, step, [accept]⟩
+  ⟨start, step, {accept}⟩
 
 
 def PreprocessParser (fst_comp : FST α Γ σa) (p : PDA Γ π σp) : PPTable α σp σa Γ :=
   let (re, tist) := BuildInverseTokenSpannerTable fst_comp
   fun qp =>
-    let accepted := re.filter (λ s => (p.evalFrom (some (qp, [])) s).isSome)
+    let accepted := re.filter (λ s => (p.evalFrom {(qp, [])} s) != ∅)
     let rejected := re.filter (λ s => s ∈ accepted ∧ (p.toNFA.evalFrom qp s) = none)
     let dependent := (re \ accepted) \ rejected
     fun qa =>
@@ -46,7 +45,7 @@ def PreprocessParser (fst_comp : FST α Γ σa) (p : PDA Γ π σp) : PPTable α
 def ComputeValidTokenMask (P : PDA Γ π σp) (itst : List Γ → σa → List α) (table : PPTable α σp σa Γ) (qa : σa) (qp : σp) (st : List π) : List α := Id.run do
   let mut accepted := (table qp qa).fst
   for d in (table qp qa).2.1 do
-    if (P.evalFrom (some (qp, st)) d).isSome then
+    if (P.evalFrom {(qp, st)} d) ≠ ∅ then
       accepted := accepted ++ (itst d qa)
 
   accepted.dedup

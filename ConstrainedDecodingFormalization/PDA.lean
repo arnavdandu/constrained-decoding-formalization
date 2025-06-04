@@ -44,32 +44,40 @@ theorem isPrefix_merge [ BEq α ] [ LawfulBEq α] ( xs ys zs : List α ) (h : ys
 
 end PrefixHelper
 
-structure PDA (Γ : Type u) ( π : Type v) ( σ : Type w) where
+structure PDA (Γ : Type u) ( π : Type v) ( σ : Type w) [Fintype Γ] [Fintype π] [Fintype σ] where
   start : σ
-  step : σ → Γ → Set (List π × List π × σ)
-  accept : Set σ
+  step : σ → Γ → Finset (List π × List π × σ)
+  accept : Finset σ
 
 -- inspired by Mathlib DFA
 namespace PDA
 
-variable { Γ π σ } [ BEq π ] ( P : PDA Γ π σ )
+variable { Γ π σ } [ DecidableEq σ ] [ DecidableEq π ] [Fintype Γ] [Fintype π] [sf: Fintype σ]
+variable ( P : PDA Γ π σ )
+
 
 instance [Inhabited σ] [Inhabited π] : Inhabited (PDA Γ π σ) :=
   ⟨PDA.mk default (fun _ _=> ∅) default⟩
 
-def fullStep (S : Set (σ × List π)) (t : Γ) : Set (σ × List π) :=
-  ⋃ s_st ∈ S,
-    let (s, st) := s_st
-    ⋃ tr ∈ P.step s t,
-      let (top, replace, dst) := tr
+def fullStep (S : Finset (σ × List π)) (t : Γ) : Finset (σ × List π) :=
+  S.biUnion fun (s, st) =>
+    (P.step s t).biUnion fun (top, replace, dst) =>
       match top.isPrefixOf? st with
-      | some rem => {(dst, replace ++ rem)}
+      | some rem => { (dst, replace ++ rem) }
       | none => ∅
+
+-- def fullStep (S : Finset (σ × List π)) (t : Γ) : Finset (σ × List π) :=
+--   ⋃ s_st ∈ S,
+--     let (s, st) := s_st
+--     ⋃ tr ∈ P.step s t,
+--       let (top, replace, dst) := tr
+--       match top.isPrefixOf? st with
+--         | some rem => {(dst, replace ++ rem)}
+--         | none => ∅
 
 @[simp]
 theorem fullStep_none ( t : Γ ) : P.fullStep ∅ t = ∅ :=
   by simp[fullStep]
-
 
 private theorem fullStep_stackInvariance [ LawfulBEq π  ] : ∀ s st sn stn st' t, st <+: st' →
    (sn, stn) ∈ P.fullStep {(s, st)} t →
@@ -92,7 +100,7 @@ private theorem fullStep_stackInvariance [ LawfulBEq π  ] : ∀ s st sn stn st'
   simp[p2]
 
 
-def evalFrom ( s: Set ( σ × List π ) ) : List Γ → Set (σ × List π) :=
+def evalFrom ( s: Finset ( σ × List π ) ) : List Γ → Finset (σ × List π) :=
   List.foldl ( fun s a => fullStep P s a) s
 
 @[simp]
@@ -100,7 +108,7 @@ theorem evalFrom_nil (s : σ) (st : List π) : P.evalFrom {(s, st)} [] = {(s, st
   rfl
 
 @[simp]
-theorem evalFrom_cons (S : Set (σ × List π)) (head: Γ) (tail : List Γ) : P.evalFrom S (head :: tail) = P.evalFrom (P.fullStep S head) tail := by
+theorem evalFrom_cons (S : Finset (σ × List π)) (head: Γ) (tail : List Γ) : P.evalFrom S (head :: tail) = P.evalFrom (P.fullStep S head) tail := by
   simp[evalFrom]
 
 @[simp]
@@ -112,13 +120,14 @@ theorem evalFrom_none  ( w : List Γ ) : P.evalFrom {} w = {} := by
   simp[this, fullStep_none, ih]
 
 @[simp]
-theorem fullStep_subset (u: Set (σ × List π)) (v: Set (σ × List π)) (h: u ⊆ v) ( w : Γ )
+theorem fullStep_subset (u: Finset (σ × List π)) (v: Finset (σ × List π)) (h: u ⊆ v) ( w : Γ )
   : P.fullStep u w ⊆ P.fullStep v w := by
   simp only[fullStep]
-  exact Set.biUnion_mono h fun x a ⦃a⦄ a => a
+  apply Finset.biUnion_subset_biUnion_of_subset_left
+  exact h
 
 @[simp]
-theorem evalFrom_subset (u: Set (σ × List π)) (v: Set (σ × List π)) (h: u ⊆ v) ( w : List Γ )
+theorem evalFrom_subset (u: Finset (σ × List π)) (v: Finset (σ × List π)) (h: u ⊆ v) ( w : List Γ )
   : P.evalFrom u w ⊆ P.evalFrom v w := by
   induction w generalizing u v
   case nil =>
@@ -127,14 +136,14 @@ theorem evalFrom_subset (u: Set (σ × List π)) (v: Set (σ × List π)) (h: u 
     have := P.fullStep_subset u v h head
     simp[this, ih]
 
-def evalFull : List Γ → Set (σ × List π) :=
+def evalFull : List Γ → Finset (σ × List π) :=
   fun w => (P.evalFrom {(P.start, [])} w)
 
-def eval : List Γ → Set σ :=
-  fun w => Prod.fst '' (P.evalFrom {(P.start, [])} w)
+def eval : List Γ → Finset σ :=
+  fun w => (P.evalFrom {(P.start, [])} w).image Prod.fst
 
 def acceptsFrom ( s: σ ) (st : List π ) : Language Γ :=
-  { w | ∃ f, f ∈ Prod.fst '' (P.evalFrom {(s, st)} w) ∧ f ∈ P.accept }
+  { w | ∃ f, f ∈ (P.evalFrom {(s, st)} w).image Prod.fst ∧ f ∈ P.accept }
 
 def accepts : Language Γ := P.acceptsFrom P.start []
 
@@ -150,7 +159,7 @@ def pruned : Prop :=
 -- removes all stack operations
 def toNFA : NFA Γ σ :=
   NFA.mk
-    (fun st a => (fun q => q.2.2) '' P.step st a)
+    (fun st a => ((P.step st a).image (fun q => q.2.2)))
     {P.start}
     P.accept
 
@@ -201,10 +210,10 @@ lemma evalFrom_iff_exists :
     exact h.right
 
 
-lemma fullStep_evalFrom [DecidableEq σ] :
+lemma fullStep_evalFrom :
   ∀ S s' st' t,
     (s', st') ∈ P.fullStep S t →
-      s' ∈ (P.toNFA.stepSet (Prod.fst '' S) t)
+      s' ∈ (P.toNFA.stepSet (S.image Prod.fst) t)
   := by
   intro S s' st' t
   simp [PDA.toNFA, NFA.stepSet]
@@ -221,10 +230,10 @@ lemma fullStep_evalFrom [DecidableEq σ] :
   exists top
   exists replace
 
-lemma overApproximationLemma [DecidableEq σ] :
+lemma overApproximationLemma :
   ∀ w S s' st',
     (s', st') ∈ P.evalFrom S w →
-      s' ∈ P.toNFA.evalFrom (Prod.fst '' S) w
+      s' ∈ P.toNFA.evalFrom (S.image Prod.fst) w
   := by
   intro w S s' st' h
 
@@ -235,7 +244,7 @@ lemma overApproximationLemma [DecidableEq σ] :
       exact fun i i_1 => Set.subset_iUnion₂_of_subset i (uh i_1) fun ⦃a⦄ a => a
 
   have subset_lem : ∀ u v w, u ⊆ v →
-    List.foldl P.toNFA.stepSet u w ⊆ List.foldl P.toNFA.stepSet  v w
+    List.foldl P.toNFA.stepSet u w ⊆ List.foldl P.toNFA.stepSet v w
     :=  by
       intro u v w uh
       induction w generalizing u v
@@ -255,9 +264,9 @@ lemma overApproximationLemma [DecidableEq σ] :
 
     have ih' := ih _ _ _ h
     simp [NFA.evalFrom, List.foldl]
-    let trans_pda := Prod.fst '' P.fullStep S head
-    let trans_nfa := (P.toNFA.stepSet (Prod.fst '' S) head)
-    have p_s_n : trans_pda ⊆ trans_nfa := by
+    let trans_pda := (P.fullStep S head).image Prod.fst
+    let trans_nfa := (P.toNFA.stepSet (S.toSet.image Prod.fst) head)
+    have p_s_n : trans_pda.toSet ⊆ trans_nfa := by
       intro p h_p
       simp[trans_pda, fullStep] at h_p
       obtain ⟨st'', s0, st0, h0, top, replace, dst, h_s⟩ := h_p
@@ -270,12 +279,11 @@ lemma overApproximationLemma [DecidableEq σ] :
       split at g <;> simp_all
     have pda_sub := subset_lem trans_pda trans_nfa tail p_s_n
     suffices s' ∈ List.foldl P.toNFA.stepSet trans_pda tail by
-      exact
-        subset_lem trans_pda (P.toNFA.stepSet (Prod.fst '' S) head) tail p_s_n
+      exact subset_lem trans_pda (P.toNFA.stepSet (S.toSet.image Prod.fst) head) tail p_s_n
           (ih (P.fullStep S head) s' st' h)
     exact ih'
 
-theorem overApproximation [DecidableEq σ] :
+theorem overApproximation  :
   ∀ w, w ∉ P.toNFA.accepts → w ∉ P.accepts := by
   intro w
   contrapose
@@ -293,7 +301,7 @@ theorem overApproximation [DecidableEq σ] :
   simp[NFA.eval]
   exact dst_nfa
 
-lemma stackInvariance_lem [ LawfulBEq π ] : ∀ s st sn stn st' w, st <+: st' →
+lemma stackInvariance_lem  : ∀ s st sn stn st' w, st <+: st' →
    (sn, stn) ∈ P.evalFrom {(s, st)} w →
    (sn, stn ++ st'.drop st.length) ∈ P.evalFrom {(s, st')} w := by
   intro s st sn stn st' w
@@ -316,10 +324,10 @@ lemma stackInvariance_lem [ LawfulBEq π ] : ∀ s st sn stn st' w, st <+: st' �
     simp at ih' ⊢
     apply evalFrom_subset
     case intro.u => exact {(step.1, step.2 ++ List.drop st.length st')}
-    exact Set.singleton_subset_iff.mpr fs_si
+    exact Finset.singleton_subset_iff.mpr fs_si
     exact ih'
 
-theorem stackInvariance [ LawfulBEq π ] : ∀ w s st st',
+theorem stackInvariance  : ∀ w s st st',
   st <+: st' → w ∈ P.acceptsFrom s st → w ∈ P.acceptsFrom s st'  := by
   intro w s st st'
   intro pfx
@@ -335,7 +343,7 @@ theorem stackInvariance [ LawfulBEq π ] : ∀ w s st st',
   constructor
   repeat assumption
 
-theorem acceptEmptyStk_acceptAll [ LawfulBEq π ] : ∀ w s st,
+theorem acceptEmptyStk_acceptAll : ∀ w s st,
   w ∈ P.acceptsFrom s [] → w ∈ P.acceptsFrom s st := by
   intro w s st
   apply stackInvariance
@@ -358,7 +366,7 @@ theorem pruned_intermediate_eq_prefix ( h : P.pruned ) :
     simp[intermediate, eval] at h_x
     have : ∃ u, u ∈ P.evalFrom {(P.start, [])} x := by
       refine Set.nonempty_def.mp ?_
-      exact Set.nonempty_iff_ne_empty.mpr h_x
+      exact Finset.nonempty_iff_ne_empty.mpr h_x
     obtain ⟨⟨s', st'⟩, h_u⟩ := this
     have ⟨fin, hfin⟩ := h s' st' x h_u
     simp[acceptsFrom] at hfin
