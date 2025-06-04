@@ -44,168 +44,252 @@ theorem isPrefix_merge [ BEq α ] [ LawfulBEq α] ( xs ys zs : List α ) (h : ys
 
 end PrefixHelper
 
-structure PDA (Γ π σ) where
+structure PDA (Γ : Type u) ( π : Type v) ( σ : Type w) where
   start : σ
-  -- if top of stack matches first, replace with second
-  step : σ → Γ → Option (List π × List π × σ)
-  accept : List σ
+  step : σ → Γ → Set (List π × List π × σ)
+  accept : Set σ
 
 -- inspired by Mathlib DFA
 namespace PDA
 
 variable { Γ π σ } [ BEq π ] ( P : PDA Γ π σ )
 
-instance [Inhabited σ] : Inhabited (PDA Γ π σ) :=
-  ⟨PDA.mk default (fun _ _ => none) default⟩
+instance [Inhabited σ] [Inhabited π] : Inhabited (PDA Γ π σ) :=
+  ⟨PDA.mk default (fun _ _=> ∅) default⟩
 
-def fullStep ( s : Option (σ × List π) ) (t : Γ ) : Option ( σ × List π ) := do
-  let (s, st) ← s
-  let (top, replace, dst) ← P.step s t
-  -- if the top prefix of stack matches top, replace
-  if let some rem := top.isPrefixOf? st then
-    pure (dst, replace ++ rem)
-  else
-    none
+def fullStep (S : Set (σ × List π)) (t : Γ) : Set (σ × List π) :=
+  ⋃ s_st ∈ S,
+    let (s, st) := s_st
+    ⋃ tr ∈ P.step s t,
+      let (top, replace, dst) := tr
+      match top.isPrefixOf? st with
+      | some rem => {(dst, replace ++ rem)}
+      | none => ∅
 
 @[simp]
-theorem fullStep_none ( t : Γ ) : P.fullStep none t = none :=
-  by rfl
+theorem fullStep_none ( t : Γ ) : P.fullStep ∅ t = ∅ :=
+  by simp[fullStep]
 
-private theorem fullStep_stackInvariance [ LawfulBEq π  ] : ∀ s st st' t, st <+: st' →
-   match P.fullStep (some (s, st)) t with
-  | some (sn, stn) => P.fullStep (some (s, st')) t = some (sn, stn ++ st'.drop st.length)
-  | none => True
+
+private theorem fullStep_stackInvariance [ LawfulBEq π  ] : ∀ s st sn stn st' t, st <+: st' →
+   (sn, stn) ∈ P.fullStep {(s, st)} t →
+   (sn, stn ++ st'.drop st.length) ∈ P.fullStep {(s, st')} t
   := by
   intro s st st' t
   intro pfx
-  split
-  case h_2 => constructor
-  case h_1 heq =>
   simp_all[fullStep]
-  cases h : P.step s t with
-  | some step =>
-    have (top, rep, dst) := step
-    simp[h] at heq
-    split at heq
-    case some.h_2 => contradiction
-    rename_i top_pfx_st
-    simp at heq
-    simp[←heq]
-    have partition := isPrefix_merge top st st' pfx
-    simp only [top_pfx_st] at partition
-    simp[partition]
-  | none =>
-    simp[h] at heq
+  have (top, rep, dst) := step
+  simp[h] at heq
+  split at heq
+  case some.h_2 => contradiction
+  rename_i top_pfx_st
+  simp at heq
+  simp[←heq]
+  have partition := isPrefix_merge top st st' pfx
+  simp only [top_pfx_st] at partition
+  simp[partition]
 
-def evalFrom ( s: Option ( σ × List π ) ) : List Γ → Option (σ × List π) :=
-  List.foldl ( fun s a => do fullStep P s a) s
+
+def evalFrom ( s: Set ( σ × List π ) ) : List Γ → Set (σ × List π) :=
+  List.foldl ( fun s a => fullStep P s a) s
 
 @[simp]
-theorem evalFrom_nil (s : σ) (st : List π) : P.evalFrom (some (s, st)) [] = some (s, st) :=
+theorem evalFrom_nil (s : σ) (st : List π) : P.evalFrom {(s, st)} [] = {(s, st)} :=
   rfl
 
 @[simp]
-theorem evalFrom_cons (s : σ) (st : List π) (head: Γ) (tail : List Γ) : P.evalFrom (some (s, st)) (head :: tail) = P.evalFrom (P.fullStep ( some (s, st) ) head) tail := by
+theorem evalFrom_cons (S : Set (σ × List π)) (head: Γ) (tail : List Γ) : P.evalFrom S (head :: tail) = P.evalFrom (P.fullStep S head) tail := by
   simp[evalFrom]
 
 @[simp]
-theorem evalFrom_none  ( w : List Γ ) : P.evalFrom none w = none := by
+theorem evalFrom_none  ( w : List Γ ) : P.evalFrom {} w = {} := by
   induction w
   rfl
   rename_i h t ih
-  have : P.evalFrom none (h :: t) = P.evalFrom (P.fullStep none h) t := by rfl
+  have : P.evalFrom {} (h :: t) = P.evalFrom (P.fullStep {} h) t := by rfl
   simp[this, fullStep_none, ih]
 
+@[simp]
+theorem fullStep_subset (u: Set (σ × List π)) (v: Set (σ × List π)) (h: u ⊆ v) ( w : Γ )
+  : P.fullStep u w ⊆ P.fullStep v w := by
+  simp only[fullStep]
+  exact Set.biUnion_mono h fun x a ⦃a⦄ a => a
 
-def evalFull : List Γ → Option (σ × List π) :=
-  fun w => (P.evalFrom (some (P.start, [])) w)
+@[simp]
+theorem evalFrom_subset (u: Set (σ × List π)) (v: Set (σ × List π)) (h: u ⊆ v) ( w : List Γ )
+  : P.evalFrom u w ⊆ P.evalFrom v w := by
+  induction w generalizing u v
+  case nil =>
+    exact h
+  case cons head tail ih =>
+    have := P.fullStep_subset u v h head
+    simp[this, ih]
 
-def eval : List Γ → Option σ :=
-  fun w => (P.evalFrom (some (P.start, [])) w).map Prod.fst
+def evalFull : List Γ → Set (σ × List π) :=
+  fun w => (P.evalFrom {(P.start, [])} w)
+
+def eval : List Γ → Set σ :=
+  fun w => Prod.fst '' (P.evalFrom {(P.start, [])} w)
 
 def acceptsFrom ( s: σ ) (st : List π ) : Language Γ :=
-  { w | ∃ f, (P.evalFrom (some (s, st)) w).map Prod.fst = some f ∧ f ∈ P.accept }
+  { w | ∃ f, f ∈ Prod.fst '' (P.evalFrom {(s, st)} w) ∧ f ∈ P.accept }
 
 def accepts : Language Γ := P.acceptsFrom P.start []
 
 -- strings that are not rejected early
 def intermediate : Language Γ :=
-  { w | P.eval w ≠ none }
+  { w | P.eval w ≠ ∅ }
 
 def pruned : Prop :=
   -- for all states that are reachable,
   -- can we eventually reach an accepting state?
-  ∀ s st, (∃ w, P.evalFull w = some (s, st)) → (∃ v, v ∈ P.acceptsFrom s st)
+  ∀ s st, (∃ w, (s, st) ∈ P.evalFull w) → (∃ v, v ∈ P.acceptsFrom s st)
 
 -- removes all stack operations
-def toFSA : FSA Γ σ :=
-  FSA.mk P.start
-    (fun st a => match P.step st a with
-      | some (_, _, dst) => some dst
-      | none => none)
+def toNFA : NFA Γ σ :=
+  NFA.mk
+    (fun st a => (fun q => q.2.2) '' P.step st a)
+    {P.start}
     P.accept
 
-private lemma fullStep_evalFrom [DecidableEq σ] :
-  ∀ s st t,
-    match P.fullStep (some (s, st)) t with
-    | some (s', _) => P.toFSA.step s t = some s'
-    | none => True
-  := by
-  intro s st t
-  split
-  case h_2 heq => constructor
-  simp [PDA.toFSA, FSA.evalFrom]
-  rename_i heq
-  simp [PDA.fullStep] at heq
-  split
-  case h_1.h_1 heq' =>
-    simp [heq'] at heq
-    split at heq <;> try contradiction
-    simp_all
-  case h_1.h_2 heq' =>
-    simp [heq'] at heq
+lemma evalFrom_iff_exists :
+  ∀ S s w, s ∈ P.evalFrom S w ↔ ∃ u, u ∈ S ∧ s ∈ P.evalFrom {u} w :=
+  by
+  have triv_dir : ∀ S s w, (∃ u, u ∈ S ∧ s ∈ P.evalFrom {u} w) → s ∈ P.evalFrom S w := by
+    intro S s w h_p
+    obtain ⟨u, h_u⟩ := h_p
+    have : {u} ⊆ S := by simp[h_u.left]
+    apply evalFrom_subset
+    assumption
+    exact h_u.right
+  intro S s w
+  apply Iff.intro
+  case mpr =>
+    exact triv_dir S s w
+  case mp =>
+  simp[evalFrom]
+  induction w generalizing S s
+  case nil =>
+    simp
+    intro h_u
+    exists s.fst, s.snd
+  case cons head tail ih =>
+    intro hp
+    have ih' := ih (P.fullStep S head) s hp
+    have ⟨s', st', hs, hf⟩ := ih'
+    simp[fullStep] at hs
+    obtain ⟨s0, st0, h⟩ := hs
+    exists s0, st0
+    constructor
+    exact h.left
+    obtain ⟨top, replace, dst, htrans⟩ := h.right
+    simp
+    suffices (s', st') ∈ P.fullStep {(s0, st0)} head by
+      have ss : P.evalFrom {(s', st')} tail ⊆ P.evalFrom {(s0, st0)} (head :: tail) := by
+        simp[evalFrom]
+        apply evalFrom_subset
+        simp[this]
+      have s_mem : s ∈ P.evalFrom {(s', st')} tail := by
+        simp[evalFrom]
+        exact hf
+      have := ss s_mem
+      simp[evalFrom] at this
+      exact this
+    simp[fullStep]
+    exact h.right
 
+
+private lemma fullStep_evalFrom [DecidableEq σ] :
+  ∀ S s' st' t,
+    (s', st') ∈ P.fullStep S t →
+      s' ∈ (P.toNFA.stepSet (Prod.fst '' S) t)
+  := by
+  intro S s' st' t
+  simp [PDA.toNFA, NFA.stepSet]
+  intro hmem
+  simp [PDA.fullStep] at hmem
+  obtain ⟨s, st, hmem'⟩ := hmem
+  obtain ⟨top, replace, dst, h⟩ := hmem'.right
+  have s_next := h.right
+  split at s_next <;> simp_all
+  exists s
+  constructor
+  exists st
+  exact hmem'.left
+  exists top
+  exists replace
 
 lemma overApproximationLemma [DecidableEq σ] :
-  ∀ w dst' s st,
-    P.evalFrom (some (s, st)) w = some dst' →
-    P.toFSA.evalFrom s w = some dst'.fst := by
-  intro w dst' s st h
-  induction w generalizing dst' s st
+  ∀ w S s' st',
+    (s', st') ∈ P.evalFrom S w →
+      s' ∈ P.toNFA.evalFrom (Prod.fst '' S) w
+  := by
+  intro w S s' st' h
+
+  have subset_lem1 : ∀ u v head, u ⊆ v →
+    P.toNFA.stepSet u head ⊆ P.toNFA.stepSet v head := by
+      intro u v head uh
+      simp[NFA.stepSet, uh]
+      exact fun i i_1 => Set.subset_iUnion₂_of_subset i (uh i_1) fun ⦃a⦄ a => a
+
+  have subset_lem : ∀ u v w, u ⊆ v →
+    List.foldl P.toNFA.stepSet u w ⊆ List.foldl P.toNFA.stepSet  v w
+    :=  by
+      intro u v w uh
+      induction w generalizing u v
+      case nil =>
+        exact uh
+      case cons head tail ih =>
+        have := subset_lem1 u v head uh
+        simp[this, ih]
+
+  induction w generalizing S s' st'
   case nil =>
-    simp [toFSA, FSA.evalFrom]
+    simp [toNFA, NFA.evalFrom]
     simp [evalFrom] at h
-    simp [←h]
+    exists st'
   case cons head tail ih =>
     simp only [PDA.evalFrom_cons] at h
 
-    generalize h1 : P.fullStep (some (s, st)) head = trans at h
-    cases trans with
-    | none =>
-      simp at h
-    | some next =>
-      have ih' := ih _ _ _ h
-      simp_all [FSA.evalFrom]
-      generalize h2p : P.toFSA.step s head = u at *
-      have := P.fullStep_evalFrom s st head
-      simp_all
-
+    have ih' := ih _ _ _ h
+    simp [NFA.evalFrom, List.foldl]
+    let trans_pda := Prod.fst '' P.fullStep S head
+    let trans_nfa := (P.toNFA.stepSet (Prod.fst '' S) head)
+    have p_s_n : trans_pda ⊆ trans_nfa := by
+      intro p h_p
+      simp[trans_pda, fullStep] at h_p
+      obtain ⟨st'', s0, st0, h0, top, replace, dst, h_s⟩ := h_p
+      simp[trans_nfa, toNFA, NFA.stepSet]
+      exists s0
+      constructor
+      exists st0
+      exists top, replace
+      have g := h_s.right
+      split at g <;> simp_all
+    have pda_sub := subset_lem trans_pda trans_nfa tail p_s_n
+    suffices s' ∈ List.foldl P.toNFA.stepSet trans_pda tail by
+      exact
+        subset_lem trans_pda (P.toNFA.stepSet (Prod.fst '' S) head) tail p_s_n
+          (ih (P.fullStep S head) s' st' h)
+    exact ih'
 
 theorem overApproximation [DecidableEq σ] :
-  ∀ w s st, w ∉ P.toFSA.acceptsFrom s → w ∉ P.acceptsFrom s st := by
-  intro w s st
+  ∀ w, w ∉ P.toNFA.accepts → w ∉ P.accepts := by
+  intro w
   contrapose
   simp
   intro wap
-  simp[acceptsFrom] at wap
+  simp[accepts, acceptsFrom] at wap
   obtain ⟨dst, ⟨⟨stk_f, h_eval⟩, h_accept⟩⟩ := wap
-  simp [FSA.acceptsFrom]
+  simp [NFA.accepts]
   exists dst
   constructor
-  have := P.overApproximationLemma w (dst, stk_f) s st h_eval
-  simp [this]
-  have : P.toFSA.accept = P.accept := by rfl
+  have : P.toNFA.accept = P.accept := by rfl
   simp[this, h_accept]
+  have dst_nfa := P.overApproximationLemma w {(P.start, [])} dst stk_f h_eval
+  simp[Set.image] at dst_nfa
+  simp[NFA.eval]
+  exact dst_nfa
 
 
 lemma stackInvariance_lem [ LawfulBEq π ] : ∀ w s st st',

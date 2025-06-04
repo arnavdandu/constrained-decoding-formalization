@@ -34,7 +34,7 @@ def PreprocessParser (fst_comp : FST α Γ σa) (p : PDA Γ π σp) : PPTable α
   let (re, tist) := BuildInverseTokenSpannerTable fst_comp
   fun qp =>
     let accepted := re.filter (λ s => (p.evalFrom (some (qp, [])) s).isSome)
-    let rejected := re.filter (λ s => s ∈ accepted ∧ (p.toFSA.evalFrom qp s) = none)
+    let rejected := re.filter (λ s => s ∈ accepted ∧ (p.toNFA.evalFrom qp s) = none)
     let dependent := (re \ accepted) \ rejected
     fun qa =>
       let accepted_a := (accepted.map (fun tok => (tist tok qa))).foldl List.append []
