@@ -6,9 +6,9 @@ import ConstrainedDecodingFormalization.RealizableSequence
 universe u v w x y z
 variable { α : Type u } { β : Type x } { Γ : Type y } { π : Type v } { σp : Type w } { σa : Type z }
 
-variable [ BEq π ]
-  [ FinEnum σp ] [ FinEnum Γ ] [ FinEnum α ] [ FinEnum σa ]
-  [ DecidableEq σp ] [DecidableEq β] [DecidableEq Γ ] [ DecidableEq α ]
+variable
+  [ FinEnum σp ] [ FinEnum Γ ] [ FinEnum α ] [ FinEnum σa ] [ FinEnum π ]
+  [ DecidableEq σp ] [DecidableEq β] [DecidableEq Γ ] [ DecidableEq α ] [ DecidableEq π ]
 
 abbrev PPTable (α σp σa Γ) := (σp → σa → (List α × List (List Γ) × List (List Γ)))
 -- todo use a better solution for extending the number of states by 1
@@ -18,7 +18,7 @@ def ParserWithEOS  (p: PDA Γ π σp) : PDA (Ch Γ) π (Ch σp) :=
   let step := fun s c =>
     match s, c with
     | .char s, .char c =>
-      (fun (spt, spr, s) => (spt, spr, ExtChar.char s)) '' (p.step s c)
+      (p.step s c).image (fun (spt, spr, s) => (spt, spr, ExtChar.char s))
     | .char s, .eos =>
       if s ∈ p.accept then
         { ([], [], accept) }
@@ -29,11 +29,38 @@ def ParserWithEOS  (p: PDA Γ π σp) : PDA (Ch Γ) π (Ch σp) :=
   ⟨start, step, {accept}⟩
 
 
+-- TODO is there a better way to avoid this mess?
+namespace FinsetNFA
+
+def stepSet (p: PDA Γ π σp) (q : Finset σp) (s : Γ) : Finset σp :=
+    Finset.biUnion q (fun q' => (p.step q' s).image fun x => x.2.2)
+
+def evalFrom (p: PDA Γ π σp) (q : Finset σp) (s : List Γ) : Finset σp
+  :=
+   List.foldl (stepSet p) q s
+
+omit [DecidableEq Γ] [DecidableEq π]
+theorem finsetEvalFrom_iff_evalFrom (p: PDA Γ π σp) (q : Finset σp) (s : List Γ) :
+  ∀ u, u ∈ FinsetNFA.evalFrom p q s ↔ u ∈ p.toNFA.evalFrom q s := by
+  intro u
+  simp[NFA.evalFrom, FinsetNFA.evalFrom]
+  induction s generalizing q
+  case nil => simp
+  case cons h t ih =>
+    simp[stepSet, NFA.stepSet]
+    suffices
+      (q.biUnion fun q' => Finset.image (fun x => x.2.2) (p.step q' h)) = (⋃ s ∈ q, p.toNFA.step s h) by
+      rw[←this]
+      apply ih
+    exact Finset.coe_biUnion
+end FinsetNFA
+
 def PreprocessParser (fst_comp : FST α Γ σa) (p : PDA Γ π σp) : PPTable α σp σa Γ :=
   let (re, tist) := BuildInverseTokenSpannerTable fst_comp
   fun qp =>
-    let accepted := re.filter (λ s => (p.evalFrom {(qp, [])} s) != ∅)
-    let rejected := re.filter (λ s => s ∈ accepted ∧ (p.toNFA.evalFrom qp s) = none)
+    let accepted := re.filter (λ s => (p.evalFrom {(qp, [])} s) ≠  ∅)
+    let rejected := re.filter (λ s => FinsetNFA.evalFrom p {qp} s ≠ ∅)
+
     let dependent := (re \ accepted) \ rejected
     fun qa =>
       let accepted_a := (accepted.map (fun tok => (tist tok qa))).foldl List.append []
@@ -57,7 +84,7 @@ def ComputeValidTokenMask (P : PDA Γ π σp) (itst : List Γ → σa → List �
    and then the parser
 -/
 def GCDChecker
-   [FinEnum (Ch β)] [FinEnum σp] [FinEnum σa] [FinEnum π] [FinEnum (Ch Γ)] [FinEnum α]
+   [FinEnum (Ch β)] [FinEnum σp] [FinEnum σa] [FinEnum π] [FinEnum α]
    (spec: LexerSpec α Γ σa) (tokens: List (Token (Ch α) (Ch β))) (parser: PDA Γ π σp) : List β → Ch β → Bool :=
   let detok := Detokenizing.BuildDetokenizingFST tokens
   let fst := BuildLexingFST spec
@@ -72,11 +99,10 @@ def GCDChecker
     match comb.eval curr with
     | none => false
     | some (q_fst, terms) =>
-      match parser.evalFrom (some (parser.start, [])) terms with
-      | none => false
-      | some (q_parse, st) =>
-        let mask := ComputeValidTokenMask parser itst pp_table q_fst q_parse st
-        mask.contains cand
+      let q_pda := parser.evalFrom {(parser.start, [])} terms
+      let in_curr := q_pda.image
+        (fun (q_parse, st) => (ComputeValidTokenMask parser itst pp_table q_fst q_parse st).contains cand)
+      Finset.fold Bool.or false id in_curr
 
 -- we want to say that accepted if and only if
 -- theres a realizable sequence that's accepted

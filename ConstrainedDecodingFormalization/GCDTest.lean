@@ -57,10 +57,10 @@ def simplePDA : PDA Digit StackSym ParserState :=
   start := 0,
   step := fun s g =>
     match s, g with
-    | 0, 0 => some ([], [1], 0)
-    | 0, 1 => some ([1], [], 0)
-    | _, _ => none
-  accept := [0]
+    | 0, 0 => { ([], [1], 0) }
+    | 0, 1 => { ([1], [], 0) }
+    | _, _ => {}
+  accept := {0}
 }
 
 def tokens : List (Token (Ch Chr) (Ch Vocab)) := [
@@ -92,11 +92,11 @@ def pp := PreprocessParser full_fst parser
 #eval [1, 0] ∈ simpleFSA.accepts
 #eval [1, 1] ∈ simpleFSA.accepts
 
-#eval simplePDA.evalFrom (some (simplePDA.start, [])) [0]
-#eval simplePDA.evalFrom (some (simplePDA.start, [])) [1]
-#eval simplePDA.evalFrom (some (simplePDA.start, [])) [0, 0, 1, 1]
+#eval simplePDA.evalFrom {(simplePDA.start, [])} [0]
+#eval simplePDA.evalFrom {(simplePDA.start, [])} [1]
+#eval simplePDA.evalFrom { (simplePDA.start, [])} [0, 0, 1, 1]
 #eval simplePDA.step 1  (1)
-#eval simplePDA.fullStep (some (1, [0, 1])) (1)
+#eval simplePDA.fullStep {(1, [0, 1])} (1)
 #eval full_fst.eval [.char 0, .char 0, .char 1, .eos]
 #eval (BuildInverseTokenSpannerTable full_fst).1
 #eval (BuildInverseTokenSpannerTable full_fst).2 [.char 0, .char 1] (.unit, 1)

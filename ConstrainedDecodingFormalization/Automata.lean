@@ -43,25 +43,6 @@ theorem evalFrom_cons (s : σ) (x : α) (xs : List α) (h : (A.step s x).isSome)
 
 
 
-
-
-theorem evalFrom_none (s : σ) (l : List α) :
-    A.evalFrom s l = none → ∃ (s' : σ) (a : α), A.step s' a = none := by
-  contrapose!
-  intro h
-  induction l generalizing s
-  case nil =>
-    exact Option.isSome_iff_ne_none.mp rfl
-  case cons ih =>
-    apply?
-
-
-theorem evalFrom_some (s : σ) (l : List α) :
-    (∀ (s' : σ) (a : α), A.step s' a ≠ none) → (A.evalFrom s l).isSome := by
-  contrapose!
-  simp [evalFrom_none]
-  apply evalFrom_none
-
 @[simp]
 def eval : List α → Option σ :=
   A.evalFrom A.start
@@ -101,21 +82,6 @@ theorem mem_accepts {x : List α} (h : (A.eval x).isSome) : x ∈ A.accepts ↔ 
     constructor
     · simp [eval, Option.coe_get]
     · exact ha
-
-private def adjacent (s : σ) : List σ :=
-  A.alph.flatMap (fun a =>
-    match A.step s a with
-    | some s' => [s']
-    | none => []
-  )
-
-private def incoming [DecidableEq σ] (s' : σ) : List σ :=
-  A.states.flatMap (fun s =>
-      A.alph.flatMap (fun a =>
-        if A.step s a = s' then [s] else []
-      )
-  )
-
 
 partial def depthFirst'' (f : Nat → σ → List σ) (n : Nat) (a : σ) : List σ :=
   let children := f n a
@@ -419,11 +385,12 @@ private lemma evalFrom_cons_snd (s : σ) (x : α) (xs : List α)
   subst h₁
   simp_all only
 
-
-theorem evalFrom_singleton (s : σ) (a : α) (h : M.step s a = some (s', S)) :
+@[simp]
+theorem evalFrom_singleton (s : σ) (a : α) :
     M.evalFrom s [a] = M.step s a := by
-  simp_all [evalFrom]
-
+  unfold evalFrom
+  simp_all only [evalFrom_nil, List.append_nil]
+  split <;> rename_i heq <;> exact id (Eq.symm heq)
 
 @[simp]
 theorem evalFrom_cons (s : σ) (x : α) (xs : List α)
@@ -552,7 +519,7 @@ def compose {β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST
     match s, a with
     | (s₁, s₂), a => compose_fun_step M₁ M₂ s₁ s₂ a
 
-  ⟨start, step, accept⟩
+  ⟨ start, step, accept⟩
 
 def compose_fun_evalFrom { β : Type u_1 } { τ : Type u_2 } (M₁ : FST α Γ σ) (M₂ : FST Γ β τ) (s₁ : σ) (s₂ : τ) (w : List α) : Option ((σ × τ) × List β) :=
   match M₁.evalFrom s₁ w with
@@ -659,36 +626,6 @@ lemma compose_fun_evalFrom_singleton (s₁ : σ) (s₂ : τ) (x : α)
 variable (A : FSA α σ)
 
 /-
-theorem compose_fun_evalFrom_cons (s₁ : σ) (s₂ : τ) (x : α) (xs : List α)
-    (h₀ : M₁.compose_fun_evalFrom M₂ s₁ s₂ (x :: xs) = some ((a₁, s₂), A))
-    (h₁ : M₁.compose_fun_evalFrom M₂ s₁ s₂ [x] = some ((b₁, b₂), B))
-    (h₂ : M₁.compose_fun_evalFrom M₂ a₁ a₂ xs = some ((c₁, c₂), C)) :
-      ((a₁, s₂), A) = ((c₁, c₂), B ++ C) := by
-  unfold compose_fun_evalFrom at *
-  -- M₁.step x = (s', S)
-  -- M₁.evalFrom s
-  -- M₁.evalFrom s₁ (x :: xs) = (M₁.evalFrom (M₁.step x) xs).1,
-  have : M₁.evalFrom s₁ (x :: xs) =
-  have p₀ : M₁.evalFrom s₁ [x] = M₁.step s₁ x := by apply evalFrom_singleton
-  split at h₀
-  . contradiction
-
-
-
-  repeat sorry
-
-
-  --have : (M₂.evalFrom s₂ (head_eval)).isSome :=
-
-
-theorem compose_eval_correct (w : List α)
-    (h₁ : (compose M₁ M₂).eval w = some r) (h₂ : compose_fun_eval M₁ M₂ w = some t) :
-    r = t := by
-  induction w
-  case nil =>
-    sorry
-  case cons h tail ih =>
-    sorry
 
 def toFSA : FSA α σ :=
   let step := fun s a => (M.step s a).1
@@ -767,32 +704,27 @@ def transitions (fst : FST α Γ σ) : List (σ × α × (Option σ × List Γ))
     )
   )
 
-
+def mkStep (transitions : List (σ × α × (Option σ × List Γ))) : σ → α → (Option σ × List Γ) :=
+  fun s a =>
+    transitions.find? (fun (s', a', _) => s = s' && a = a')
+    |>.map (fun (_, _, ts) => ts)
+    |>.getD (none, [])
 
 -/
 
 
 end FST
 
-
--- Option α allows for ε-transitions
+-- same as FST, but Option α allows for ε-transitions
 structure εFST (α Γ σ) where
   alph : List α
   oalph : List Γ
   states : List σ
   start : σ
-  step : σ → Option α → List (σ × List Γ)
+  step : σ → Option α → (Option σ × List Γ)
   accept : List σ
 
 namespace εFST
-
-variable {α : Type u} {σ : Type v} (M : εFST α Γ σ) {S : Set σ} {s t u : σ} {a : α}
-
-#check List.join
-
-inductive εClosure (S : Set σ) : Set σ
-  | base : ∀ s ∈ S, εClosure S s
-  | step : ∀ (s), ∀ t ∈ M.step s none, εClosure S s → εClosure S t.1
 
 
 end εFST
