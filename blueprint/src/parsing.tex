@@ -1,5 +1,7 @@
 \subsection{Parsing}
 Results related to construction of the PDA
+
+\iffalse
 \begin{definition}[Parser]
     \label{def:Parser}
     \lean{PDA.fromCFG}
@@ -27,6 +29,7 @@ Results related to construction of the PDA
     Let $\pushdown \circ \transducer_{\automaton \circ \vocab}$ denote the composition between the parser and lexing transducer and detokenizer.
     An input string $w \in \vocab^{*}$ is accepted by $\pushdown \circ \transducer_{\automaton \circ \vocab}$ if and only if $F(w)$ (the string over $\alphabet^{*}$) is a sentence in the original CFG (with respect to $\lexer$).
 \end{theorem}
+\fi
 
 \begin{definition}[PDA Pruned]
     \label{def:PDAPruned}
@@ -39,6 +42,7 @@ Results related to construction of the PDA
 \begin{theorem}{Intermediate Pruned PDA Equiv Prefix CFG}
     \label{thm:IntermediatePrunedPDAPrefixCFG}
     \lean{PDA.fromCFGPruned}
+    \leanok
     If the language of a parser is equal to the language of a context free grammar and the pda is pruned, then the intermediate language (all strings that the parser can process from the initial state) is equal to the prefix language of the CFG.
 \end{theorem}
 

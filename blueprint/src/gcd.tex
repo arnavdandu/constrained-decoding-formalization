@@ -12,9 +12,11 @@
 \begin{lemma}[Find Always Accepted Tokens Correct]
     \label{lem:FindAlwaysAcceptedCorrect}
     \uses{def:FindAlwaysAccepted}
+    \leanok
     The algorithm for finding the always accepted tokens is exactly the set of always accepted tokens.
 \end{lemma}
 \begin{proof}
+    \leanok
     \uses{lem:PDAStackInvariance} 
 \end{proof}
 
@@ -28,8 +30,10 @@
 \begin{lemma}[Find Context Dependent Correct]
     \label{lem:FindContextDependentCorrect}
     \uses{def:FindContextDependentTerminalSequences}
+    \leanok
     The algorithm for finding the context dependent terminal sequences is exactly the set of context dependent terminal sequences (in particular, all terminal sequences that may possibly be accepted are included in this set).
 \end{lemma}
+\begin{proof} \leanok \end{proof}
 
 \begin{definition}[ComputeValidTokenMask]
     \label{alg:ComputeTokenMask}
@@ -108,6 +112,7 @@
 
 \begin{definition}[GCDChecker]
     \label{def:GCDChecker}
+    \leanok
     \uses{alg:ComputeTokenMask, def:Parser, def:LexingTransducer, def:FindAlwaysAccepted, def:FindContextDependentTerminalSequences}
     We are given the lexer specification and the context free grammar as inputs.
     The actual GCD checker is constructed as follows. 

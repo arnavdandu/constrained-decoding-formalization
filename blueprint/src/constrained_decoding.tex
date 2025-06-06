@@ -31,6 +31,7 @@ General propositions about constrained decoding
 
 \begin{definition}[Constrained Decoding]
     \label{def:ConstrainedDecoding}
+    \leanok
     \uses{def:LanguageModel,def:Checker,def:Vocabulary}
     \[
     \begin{array}{l}
@@ -64,6 +65,7 @@ General propositions about constrained decoding
 Theoretically, another way of formalizing this would be to consider the IntermediateLanguage \emph{parameterized} by the initial prompt (versus right now where we only start from $\epsilon$). In the general constrained decoding paradigm, this may appear more natural. However, for our work, I believe we really only need to consider the case where we are prompted by a string in the prefix of the grammar. This actually implies we really only need to consider a single IntermediateLanguage: the set of strings reachable from $\epsilon$.
 \begin{theorem}[Checker Intermediate Language Correct]
     \label{def:CheckerIntermediateLanguageCorrect}
+    \leanok
     \uses{def:CheckerIntermediateLanguage,def:ConstrainedDecoding}
     Let $C$ be an checker and suppose that $x \in \langint$. Then:
     \begin{enumerate}
@@ -71,6 +73,7 @@ Theoretically, another way of formalizing this would be to consider the Intermed
         \item Let $M$ be an arbitrary language model. If constrained decoding on $M, C, x$ encounters $w$ as an intermediate value of $x$, then $w \in \langint$.
     \end{enumerate}
 \end{theorem}
+\begin{proof} \leanok \end{proof}
 We might not need this theorem as it may be awkward to define intermediate values of $x$.
 
 \begin{definition}[Checker Language]
@@ -83,6 +86,7 @@ NB: unless a checker is \emph{sound}, do note that strings in the checker interm
 
 \begin{theorem}[Checker Language Correct]
     \label{def:CheckerLanguageCorrect}
+    \leanok
     \uses{def:CheckerLanguage,def:ConstrainedDecoding}
     Let $C$ be an checker. Suppose that $x \in \langint$. Then: 
     \begin{enumerate}
@@ -90,6 +94,7 @@ NB: unless a checker is \emph{sound}, do note that strings in the checker interm
         \item Let $M$ be an arbitrary language model. If constrained decoding on $M, C, x$ terminates and returns some value $v$, then $v \in \lang$. Informally, the language captures all producible strings.
     \end{enumerate}
 \end{theorem}
+\begin{proof} \leanok \end{proof}
 
 \begin{definition}[Checker Sound]
     \label{def:CheckerSound}
@@ -113,5 +118,6 @@ NB: unless a checker is \emph{sound}, do note that strings in the checker interm
     \uses{def:Checker, def:CheckerIntermediateLanguage, def:CheckerLanguage}
     A checker for a language $\lang$ is \emph{complete} if the checker language and $\lang$ are equivalent, and the checker intermediate language and $\langpre$ are equivalent. 
 \end{definition}
+\begin{proof} \leanok \end{proof}
 
 

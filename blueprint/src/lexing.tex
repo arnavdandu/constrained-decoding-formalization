@@ -3,6 +3,7 @@ Results related to the lexing and detokenizing.
 
 \begin{definition}[Lexer Regular Expression Specification]
 	\label{def:LexerRESpecification}
+	\leanok
     \uses{def:FSA, def:RE}
     A lexer regular expression specification, is given as a finite set of pairs, each consisting of a regular expression $R^i$ and a terminal symbol $T^i \in \terms$.
 \end{definition}
@@ -14,9 +15,11 @@ Results related to the lexing and detokenizing.
 
 \begin{theorem}[REEquivFSA]
     \label{thm:REEquivFSA}
+    \leanok
     \uses{def:FSA, def:BuildFSA}
     The language of the resultant FSA from the build FSA procedure is exactly the language of the input regular expression.
 \end{theorem}
+\begin{proof} \leanok \end{proof}
 
 \begin{definition}[Lexer Automata Specification]
 	\label{def:LexerASpecification}
@@ -51,6 +54,7 @@ Results related to the lexing and detokenizing.
     Let $\lang(A_i)$ be the languages of each input automata.
     If $\lexer$ fails to return on some input string $w$, then among all possible partitions of $w$ into a set of strings $w_1 \ldots w_k$, there exists an $i$ such that $w_i \notin \lang(A_j)$ for all j. Conversely, if $\texttt{Lex} = (T_1, \ldots T_k, \epsilon)$, then $w$ may be partitioned into $w_1 \ldots w_k$ such that $w$ is the concatenation of $w_1 \ldots w_k$ and each $w_i \in \lang(A_j)$ for some $j$.
 \end{theorem}
+\begin{proof} \leanok \end{proof}
 We can possibly make the second direction stronger and mention how the partition it produces is related to maximal munching / 1-lookahead. Of course, an easy corollary is that this relates to the original lexer specification in terms of the regular expressions.
 
 \begin{definition}[DetokenizingFST]

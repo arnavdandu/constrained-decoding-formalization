@@ -8,8 +8,6 @@ checkerComplete
 PartialLexSplit
 BuildDetokenizingFST
 BuildLexingFST
-PDA.fromCFG
-PDA.fromCFGCorrect
 PDA.pruned
 PDA.fromCFGPruned
 PDA.stackInvariance

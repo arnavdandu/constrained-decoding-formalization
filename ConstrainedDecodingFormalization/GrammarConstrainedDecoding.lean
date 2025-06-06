@@ -1,6 +1,7 @@
 import ConstrainedDecodingFormalization.PDA
 import ConstrainedDecodingFormalization.Lexing
 import ConstrainedDecodingFormalization.RealizableSequence
+import ConstrainedDecodingFormalization.Vocabulary
 -- Actual implementation of grammar constrained decoding
 
 universe u v w x y z
@@ -104,17 +105,17 @@ def GCDChecker
         (fun (q_parse, st) => (ComputeValidTokenMask parser itst pp_table q_fst q_parse st).contains cand)
       Finset.fold Bool.or false id in_curr
 
--- we want to say that accepted if and only if
--- theres a realizable sequence that's accepted
--- theorem accept_if_ComputedValidTokenMask (P : PDA Γ π σ) (fst_comp : FSTComp α Γ σ0) :
---   ∀ st qa qp v,
---     v ∈ (ComputeValidTokenMask P (BuildInverseTokenSpannerTable fst_comp).snd (PreprocessParser fst_comp P) qa qp st) →
---     -- jointly evaluating, it is still accepted
---     -- P.evalFrom qp st (all new symbols)
---     True
---   := by sorry
+-- want to say that for any lexer state
+-- any thing that starts with a realizable sequence is producible
+-- and producible if and only if that's the case
+theorem realizableSequencesComplete [Vocabulary α β] (spec: LexerSpec ) : ∀ qa, := by
+  sorry
 
--- if compute valid token mask rejects it,
--- the parser would reject it (now or in the future)
--- so it must mean there is no way to get to an accepting state
--- theorem ComputedValidTokenMask_complete : 0 = 0 := by sorry
+-- a token is accepted if and only if in the current state
+-- there is a realizable sequence that starts with the token that
+-- is accepted in the current state
+theorem accept_if_ComputedValidTokenMask (P : PDA Γ π σp) (fst_comp : FSTComp α Γ σa) (qp: σp) (st: List π) (qa: σa) :
+  ∀ v,
+    v ∈ (ComputeValidTokenMask P (BuildInverseTokenSpannerTable fst_comp).snd (PreprocessParser fst_comp P) qa qp st) ↔
+    v q
+    ---

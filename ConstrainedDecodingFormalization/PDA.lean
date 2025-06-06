@@ -49,7 +49,6 @@ structure PDA (Γ : Type u) ( π : Type v) ( σ : Type w) [Fintype Γ] [Fintype 
   step : σ → Γ → Finset (List π × List π × σ)
   accept : Finset σ
 
--- inspired by Mathlib DFA
 namespace PDA
 
 variable { Γ π σ } [ DecidableEq σ ] [ DecidableEq π ] [Fintype Γ] [Fintype π] [sf: Fintype σ]
@@ -65,15 +64,6 @@ def fullStep (S : Finset (σ × List π)) (t : Γ) : Finset (σ × List π) :=
       match top.isPrefixOf? st with
       | some rem => { (dst, replace ++ rem) }
       | none => ∅
-
--- def fullStep (S : Finset (σ × List π)) (t : Γ) : Finset (σ × List π) :=
---   ⋃ s_st ∈ S,
---     let (s, st) := s_st
---     ⋃ tr ∈ P.step s t,
---       let (top, replace, dst) := tr
---       match top.isPrefixOf? st with
---         | some rem => {(dst, replace ++ rem)}
---         | none => ∅
 
 @[simp]
 theorem fullStep_none ( t : Γ ) : P.fullStep ∅ t = ∅ :=
