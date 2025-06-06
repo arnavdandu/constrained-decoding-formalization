@@ -108,7 +108,8 @@ def GCDChecker
 -- want to say that for any lexer state
 -- any thing that starts with a realizable sequence is producible
 -- and producible if and only if that's the case
-theorem realizableSequencesComplete [Vocabulary α β] (spec: LexerSpec ) : ∀ qa, := by
+theorem realizableSequencesComplete [Vocabulary α β] (spec: LexerSpec α Γ σa) :
+  ∀ qa, ∃ := by
   sorry
 
 -- a token is accepted if and only if in the current state
