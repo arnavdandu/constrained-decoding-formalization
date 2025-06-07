@@ -494,6 +494,12 @@ partial def computeSingleProducible
 
   (dfs q [] []).snd
 
+theorem computeSingleProducible_correct
+  [ Fintype Γ ] [ Fintype σ ] [ a: FinEnum α ]
+  [DecidableEq σ ] [DecidableEq α ] [DecidableEq Γ ] (q : σ) :
+    (M.computeSingleProducible q).toFinset = { t | ∃ w qf, M.evalFrom q w = some (qf, [t])} := by
+    sorry
+
 
 universe u_1 u_2
 
